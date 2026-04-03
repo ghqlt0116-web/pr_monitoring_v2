@@ -6,6 +6,7 @@ import styles from '../page.module.css';
 
 export default function CommunityDashboard() {
     const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
+    const [dashboardMode, setDashboardMode] = useState<'search' | 'blogger'>('search');
     const [posts, setPosts] = useState<any[]>([]);
     const [targets, setTargets] = useState<any[]>([]);
     const [keywords, setKeywords] = useState<any[]>([]);
@@ -149,7 +150,12 @@ export default function CommunityDashboard() {
         document.body.removeChild(link);
     };
 
-    const filteredPosts = posts.filter(p => filterTarget === 'ALL' || p.targetId.toString() === filterTarget);
+    const filteredPosts = posts.filter(p => {
+        if (filterTarget !== 'ALL' && p.targetId.toString() !== filterTarget) return false;
+        const isSearch = p.target?.url?.includes('search') || p.target?.url?.includes('query') || p.target?.url?.includes('where=');
+        if (dashboardMode === 'search') return isSearch;
+        return !isSearch;
+    });
 
     const Sidebar = () => (
         <aside className={`glass-panel ${styles.sidebar}`}>
@@ -235,6 +241,22 @@ export default function CommunityDashboard() {
 
                 {currentView === 'dashboard' ? (
                     <>
+                        {/* 탭 토글 */}
+                        <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
+                            <button
+                                onClick={() => setDashboardMode('search')}
+                                style={{ background: 'none', border: 'none', color: dashboardMode === 'search' ? '#10b981' : 'var(--text-muted)', fontWeight: dashboardMode === 'search' ? 'bold' : 'normal', fontSize: '1.05rem', cursor: 'pointer', padding: '0.5rem 1rem', borderBottom: dashboardMode === 'search' ? '2px solid #10b981' : 'none' }}
+                            >
+                                🔍 매시브 탐색 (포털 검색)
+                            </button>
+                            <button
+                                onClick={() => setDashboardMode('blogger')}
+                                style={{ background: 'none', border: 'none', color: dashboardMode === 'blogger' ? '#10b981' : 'var(--text-muted)', fontWeight: dashboardMode === 'blogger' ? 'bold' : 'normal', fontSize: '1.05rem', cursor: 'pointer', padding: '0.5rem 1rem', borderBottom: dashboardMode === 'blogger' ? '2px solid #10b981' : 'none' }}
+                            >
+                                👤 파워블로거 / 특정 커뮤니티
+                            </button>
+                        </div>
+
                         <section style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                             <select value={filterTarget} onChange={e => setFilterTarget(e.target.value)} className={styles.settingsInput} style={{ width: '200px', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }}>
                                 <option value="ALL" style={{ color: 'black' }}>전체 타겟 통합보기</option>
@@ -314,14 +336,14 @@ export default function CommunityDashboard() {
                                 <h4 style={{ fontSize: '1.1rem', color: '#10b981' }}>🌐 커뮤니티 파싱 타겟 등록</h4>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', minWidth: 0 }}>
                                 <input
                                     type="text"
                                     placeholder="사이트 명칭 (예: 네이버 블로그)"
                                     value={newSiteName}
                                     onChange={(e) => setNewSiteName(e.target.value)}
                                     className={styles.settingsInput}
-                                    style={{ flex: 1, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                                    style={{ flex: 1, minWidth: 0, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                                 />
                                 <input
                                     type="text"
@@ -329,17 +351,19 @@ export default function CommunityDashboard() {
                                     value={newTargetUrl}
                                     onChange={(e) => setNewTargetUrl(e.target.value)}
                                     className={styles.settingsInput}
-                                    style={{ flex: 2, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+                                    style={{ flex: 2, minWidth: 0, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
                                 />
-                                <button onClick={addTarget} className={styles.editBtn} style={{ background: 'var(--accent-brand)', padding: '0 1.5rem' }}><Plus size={18} /></button>
+                                <button onClick={addTarget} className={styles.editBtn} style={{ background: 'var(--accent-brand)', padding: '0 1.5rem', flexShrink: 0 }}><Plus size={18} /></button>
                             </div>
 
                             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {targets.map(t => (
-                                    <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                                        <div>
+                                    <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', minWidth: 0 }}>
+                                        <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
                                             <strong style={{ color: '#10b981' }}>{t.siteName}</strong>
-                                            <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)' }}>URL: {t.url}</span>
+                                            <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '350px' }}>
+                                                {t.url}
+                                            </span>
                                             <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
                                                 <span style={{ color: 'var(--text-muted)' }}>
                                                     {t.lastScrapedAt ? new Date(t.lastScrapedAt).toLocaleString() : '수집 기록 없음'}

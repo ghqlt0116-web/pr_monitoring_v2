@@ -59,34 +59,48 @@ export async function POST() {
                         if (title) extracted.push({ postId: link, title, url: link, content: title, author });
                     });
                 }
-                // 3. 네이버 블로그 검색 파싱
-                else if (site.includes('네이버') || target.url.includes('naver.com')) {
-                    $('li.bx').each((i, el) => {
-                        if (extracted.length >= 10) return false;
-                        const titleEl = $(el).find('a.api_txt_lines.total_tit, a.title_link'); // 신/구 버전 클래스 대응
-                        const descEl = $(el).find('div.api_txt_lines.desc, div.dsc_txt, div.api_txt_lines.dsc_txt');
-                        const authorEl = $(el).find('a.sub_txt.sub_name, a.name');
-                        const title = titleEl.text().trim();
-                        const link = titleEl.attr('href') || '#';
-                        const content = descEl.text().trim();
-                        const author = authorEl.text().trim();
-                        if (title) extracted.push({ postId: link, title, url: link, content, author });
-                    });
+                // 3. 네이버 검색 파싱 (통합검색, 블로그검색 모두 지원)
+                else if (target.url.includes('search.naver.com')) {
+                    // 네이버의 다양한 검색 UI 컨테이너 지원
+                    const items = $('.bx, .view_wrap, li[class^="sh_"]');
+                    if (items.length > 0) {
+                        items.each((i, el) => {
+                            if (extracted.length >= 10) return false;
+                            const titleEl = $(el).find('.api_txt_lines.total_tit, .title_link, .title_area, a.sh_blog_title');
+                            const descEl = $(el).find('.api_txt_lines.desc, .dsc_txt, .sh_blog_passage');
+                            const authorEl = $(el).find('.sub_txt.sub_name, .name, .txt84');
+                            const title = titleEl.text().trim();
+                            const link = titleEl.attr('href') || '#';
+                            if (title) extracted.push({ postId: link, title, url: link, content: descEl.text().trim() || title, author: authorEl.text().trim() || '블로거' });
+                        });
+                    } else {
+                        // 엘리먼트를 못 찾으면 a태그 텍스트 기반 브루트포스 추출
+                        $('a').each((i, el) => {
+                            if (extracted.length >= 10) return false;
+                            const title = $(el).text().trim();
+                            if (title.length > 15 && ($(el).attr('href')?.includes('blog.naver.com') || $(el).hasClass('title_link'))) {
+                                const link = $(el).attr('href') || '#';
+                                if (!extracted.find(e => e.title === title)) extracted.push({ postId: link, title, url: link, content: title, author: '네이버 블로그' });
+                            }
+                        });
+                    }
                 }
-                // 4. 일반적인 a 태그 무차별 파싱 (Fallback)
+                // 4. 특정 파워블로거 개인 주소 타겟팅 및 기타 일반 커뮤니티 (Fallback)
                 else {
                     $('a').each((i, el) => {
                         if (extracted.length >= 10) return false;
                         const title = $(el).text().trim();
-                        if (title.length > 10) { // 제목 길이 필터 (너무 짧으면 메뉴 버튼으로 간주)
+                        // 파워블로거나 일반 게시판의 경우 본문/제목 링크는 텍스트가 상대적으로 김
+                        if (title.length > 12 && !title.includes('로그인') && !title.includes('회원가입') && !title.includes('더보기')) {
                             let link = $(el).attr('href') || '#';
+                            if (link === '#' || link.startsWith('javascript')) return; // 무효한 링크 무시
                             if (link.startsWith('/')) {
                                 const urlObj = new URL(target.url);
                                 link = `${urlObj.origin}${link}`;
                             }
-                            // 중복 추가 방지
+                            // 중복 방지
                             if (!extracted.find(e => e.title === title)) {
-                                extracted.push({ postId: link, title, url: link, content: title, author: '익명' });
+                                extracted.push({ postId: link, title, url: link, content: title, author: site || '파워블로거/커뮤니티' });
                             }
                         }
                     });

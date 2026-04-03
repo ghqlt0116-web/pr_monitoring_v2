@@ -12,7 +12,7 @@ export default function CreatorsDashboard() {
     const [loading, setLoading] = useState(true);
     const [scraping, setScraping] = useState(false);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
-    const [expandedSummaryId, setExpandedSummaryId] = useState<string | null>(null);
+    const [expandedSummaryIds, setExpandedSummaryIds] = useState<Set<string>>(new Set());
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
     // Form states
@@ -396,13 +396,13 @@ export default function CreatorsDashboard() {
 
                                                     <div style={{ position: 'relative' }}>
                                                         <div style={{
-                                                            maxHeight: expandedSummaryId === vid.videoId ? 'none' : '100px',
+                                                            maxHeight: expandedSummaryIds.has(vid.videoId) ? 'none' : '100px',
                                                             overflow: 'hidden',
                                                             position: 'relative'
                                                         }}>
                                                             <p className={styles.aiText} style={{ marginBottom: '0.5rem', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{vid.aiSummary}</p>
                                                         </div>
-                                                        {expandedSummaryId !== vid.videoId && (
+                                                        {!expandedSummaryIds.has(vid.videoId) && (
                                                             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, #111)', pointerEvents: 'none' }} />
                                                         )}
                                                     </div>
@@ -410,10 +410,15 @@ export default function CreatorsDashboard() {
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.8rem' }}>
                                                         <small style={{ color: 'var(--text-muted)' }}>분석일시: {new Date(vid.aiAnalyzedAt).toLocaleString()}</small>
                                                         <button
-                                                            onClick={() => setExpandedSummaryId(expandedSummaryId === vid.videoId ? null : vid.videoId)}
+                                                            onClick={() => {
+                                                                const newSet = new Set(expandedSummaryIds);
+                                                                if (newSet.has(vid.videoId)) newSet.delete(vid.videoId);
+                                                                else newSet.add(vid.videoId);
+                                                                setExpandedSummaryIds(newSet);
+                                                            }}
                                                             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem 0.7rem', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }}
                                                         >
-                                                            {expandedSummaryId === vid.videoId ? '▲ 접기' : '▼ 전체 내용 보기'}
+                                                            {expandedSummaryIds.has(vid.videoId) ? '▲ 닫기' : '▼ 전체 내용 보기'}
                                                         </button>
                                                     </div>
                                                 </div>
