@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Program {
+  id          String    @id @default(cuid())
+  channel     String?   // e.g., SBS, MBC, KBS
+  title       String    // e.g., 그것이 알고싶다
+  url         String?   // e.g., 홈페이지 예고편 게시판 URL
+  createdAt        DateTime  @default(now())
+  
+  // Scraping status
+  lastScrapedAt    DateTime?
+  lastScrapeStatus String?   // 'SUCCESS' or 'ERROR'
+  lastScrapeError  String?
+
+  episodes         Episode[]
+}
+
+model Episode {
+  id          String   @id @default(cuid())
+  programId   String
+  program     Program  @relation(fields: [programId], references: [id])
+  
+  title       String   // 예고편 제목
+  content     String   // 예고편 본문 내용
+  originalUrl String   // 원본 게시물 링크
+  thumbnail   String?  // 썸네일 이미지 링크
+  
+  broadcastDate String?  // 예: "2026-03-20"
+  scrapedAt   DateTime @default(now())
+  
+  // AI 분석 결과
+  category    String?  // "통신", "노무", "사회", "IT" 등
+  riskLevel   String?  // "상", "중", "하"
+  summary     String?  // 3줄 요약 내용
+  
+  // 담당자 수기 편집 상태
+  isEdited    Boolean  @default(false)
+}
+
+// --- 유튜버/커뮤니티 모니터링 시스템 모델 ---
+
+model CreatorChannel {
+  id          String   @id @default(cuid())
+  youtubeId   String   @unique // 유튜브 채널 ID (예: UC...)
+  title       String   // 채널명 (예: 잇섭)
+  tier        Int      @default(3) // 1, 2, 3 (중요도)
+  thumbnail   String?  // 채널 프로필 이미지
+  url         String?  // 채널 URL (또는 블로그 URL)
+  createdAt        DateTime @default(now())
+  
+  // Scraping status
+  lastScrapedAt    DateTime?
+  lastScrapeStatus String?   // 'SUCCESS' or 'ERROR'
+  lastScrapeError  String?
+
+  videos           CreatorVideo[]
+}
+
+model CreatorVideo {
+  id            String   @id @default(cuid())
+  channelId     String
+  channel       CreatorChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  videoId       String   @unique // 유튜브 영상 ID (또는 게시글 ID)
+  title         String   // 영상/게시글 제목
+  description   String?  // 영상 설명 본문
+  url           String   // 영상 링크
+  thumbnail     String?  // 영상 썸네일
+  publishedAt   DateTime // 업로드 일자
+  scrapedAt     DateTime @default(now())
+  
+  // Track B: AI 심층 분석 여부 및 결과
+  isAiRecommended Boolean  @default(false) // 내부 자막 등에서 키워드 발견 시 true (🟢 추천)
+  aiAnalyzedAt    DateTime? // 수동 분석(심층 리뷰)을 돌린 시간
+  aiSummary       String?  // AI 여론 분석 3줄 요약
+  aiRiskLevel     String?  // "상", "중", "하" (부정적 여론 강도)
+}
+
+model CreatorKeyword {
+  id          String   @id @default(cuid())
+  keyword     String   @unique // 타겟 감지 키워드 (예: "망 사용료", "CP사")
+  isActive    Boolean  @default(true) // 모니터링 활성화 여부
+  createdAt   DateTime @default(now())
+}
+
+model ProgramKeyword {
+  id        String   @id @default(cuid())
+  keyword   String   @unique
+  level     String   // "HIGH" or "MID"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
