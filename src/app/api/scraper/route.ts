@@ -79,10 +79,13 @@ export async function POST(req?: Request) {
               const $ = cheerio.load(item.post_contents || '');
               const textContent = $.text().trim();
               const imgUrl = $('img').attr('src');
+              let kbsUrl = item.target_url || prog.url || '';
+              if (kbsUrl.startsWith('/')) kbsUrl = 'https://program.kbs.co.kr' + kbsUrl;
+
               extracted.push({
                 title: item.post_title,
                 content: textContent || item.post_title,
-                url: item.target_url || prog.url || '',
+                url: kbsUrl,
                 thumb: imgUrl,
                 date: item.date_created
               });
@@ -163,26 +166,27 @@ export async function POST(req?: Request) {
           }
         }
 
-        // DB Save & Analyze
-        for (const ep of extracted) {
-          const exists = await prisma.episode.findFirst({ where: { title: ep.title, programId: prog.id } });
-          if (!exists) {
-            const analysisResult = analyzeWithKeywords(ep.title, ep.content, highKeywords, midKeywords);
-            const saved = await prisma.episode.create({
-              data: {
-                programId: prog.id,
-                title: ep.title,
-                content: ep.content.substring(0, 1000), // Max 1000 chars
-                originalUrl: ep.url,
-                thumbnail: ep.thumb,
-                broadcastDate: ep.date,
-                category: analysisResult.category,
-                riskLevel: analysisResult.riskLevel,
-                summary: analysisResult.summary,
-              }
-            });
-            results.push({ program: prog.title, newEpisode: saved.title });
-          }
+        // DB Save & Analyze - Only keep the latest episode per program
+        if (extracted.length > 0) {
+          // Delete all existing episodes for this program to ensure ONLY the newest is shown
+          await (prisma.episode.deleteMany as any)({ where: { programId: prog.id } });
+
+          const ep = extracted[0]; // Take only the freshest 1st item
+          const analysisResult = analyzeWithKeywords(ep.title, ep.content, highKeywords, midKeywords);
+          const saved = await (prisma.episode.create as any)({
+            data: {
+              programId: prog.id,
+              title: ep.title.replace(/^[^a-zA-Z0-9가-힣]+/, '').trim(), // Remove weird leading symbols
+              content: ep.content.substring(0, 1000), // Max 1000 chars
+              originalUrl: ep.url,
+              thumbnail: ep.thumb,
+              broadcastDate: ep.date,
+              category: analysisResult.category,
+              riskLevel: analysisResult.riskLevel,
+              summary: analysisResult.summary,
+            }
+          });
+          results.push({ program: prog.title, newEpisode: saved.title });
         }
 
       } catch (err: any) {
