@@ -313,7 +313,6 @@ export default function Dashboard() {
                           <a href={ep.originalUrl} target="_blank" rel="noopener noreferrer" className={styles.linkBtn}>
                             원문 영상 보기
                           </a>
-                          <button className={styles.editBtn}>수정</button>
                         </div>
                       </div>
                     </article>

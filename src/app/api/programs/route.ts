@@ -22,9 +22,9 @@ export async function GET() {
                 needsUpdate = true;
             }
 
-            if (!link) {
-                if (p.title.includes('알고싶다')) link = 'https://programs.sbs.co.kr/culture/unansweredquestions/boards/55075';
-                else if (p.title.includes('이야기 Y')) link = 'https://programs.sbs.co.kr/culture/cube/boards/54659';
+            if (!link || link.includes('boards/55075') || link.includes('boards/54659')) {
+                if (p.title.includes('알고싶다')) link = 'https://programs.sbs.co.kr/culture/unansweredquestions/clips/55073';
+                else if (p.title.includes('이야기 Y')) link = 'https://programs.sbs.co.kr/culture/cube/clips/54885';
                 else if (p.title.includes('수첩')) link = 'https://program.imbc.com/board/pdnote/6182';
                 else if (p.title.includes('스트레이트')) link = 'https://program.imbc.com/straight';
                 else if (p.title.includes('시사기획')) link = 'https://program.kbs.co.kr/1tv/culture/window/pc/board.html?smenu=c8144b';
