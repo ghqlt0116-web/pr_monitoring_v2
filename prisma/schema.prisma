@@ -99,3 +99,46 @@ model ProgramKeyword {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ==========================================
+// 3. 커뮤니티 모니터링 전용 모델
+// ==========================================
+
+model CommunityTarget {
+  id               Int       @id @default(autoincrement())
+  siteName         String    // 예: "디시인사이드", "네이버 블로그", "루리웹"
+  url              String    // 대상 게시판 또는 검색 URL
+  createdAt        DateTime  @default(now())
+  lastScrapedAt    DateTime?
+  lastScrapeStatus String?   // "SUCCESS" | "ERROR"
+  lastScrapeError  String?
+
+  posts            CommunityPost[]
+}
+
+model CommunityKeyword {
+  id        Int      @id @default(autoincrement())
+  keyword   String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model CommunityPost {
+  id              Int      @id @default(autoincrement())
+  targetId        Int
+  postId          String   @unique // URL이나 고유 식별자 방어 결합
+  title           String
+  content         String   @db.Text
+  url             String
+  author          String?
+  publishedAt     DateTime
+  createdAt       DateTime @default(now())
+
+  // AI 분석 필드 (유튜버 파트와 동일)
+  isAiRecommended Boolean  @default(false)
+  aiAnalyzedAt    DateTime?
+  aiSummary       String?  @db.Text
+  aiRiskLevel     String?
+
+  target          CommunityTarget @relation(fields: [targetId], references: [id])
+}
