@@ -33,57 +33,55 @@ export async function POST(req?: Request) {
             keywordStrings.push('망 사용료', 'cp사', '트래픽', '통신사', 'skb', '망이용대가');
         }
 
-        // Promise.all을 활용하여 모든 채널의 RSS 피드를 병렬(동시) 수집. (대기열 병목 소거)
-        const processPromises = channels.map(async (channel: any) => {
+        // Promise.all 대신 순차적(for...of) 실행으로 변경하여 YouTube의 429 Too Many Requests (동시 접속 차단) 에러를 방지합니다.
+        const processed = [];
+
+        for (const channel of channels) {
+            // 사용자의 요청: 재수집 시 기존 데이터(과거 잔여물)를 먼저 깔끔하게 비워줌 (에러가 나도 비워지도록 먼저 실행)
+            await ((prisma as any).creatorVideo.deleteMany as any)({ where: { channelId: channel.id } });
+
             try {
                 const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.youtubeId}`;
                 const res = await fetch(feedUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, next: { revalidate: 0 } });
 
                 if (!res.ok) {
                     console.error(`Failed to fetch RSS for ${channel.title}: ${res.status}`);
-                    await prisma.creatorChannel.update({
+                    await ((prisma as any).creatorChannel.update as any)({
                         where: { id: channel.id },
                         data: {
                             lastScrapedAt: new Date(),
                             lastScrapeStatus: 'ERROR',
-                            lastScrapeError: `HTTP Status ${res.status}`
+                            lastScrapeError: `HTTP ${res.status}`
                         }
                     });
-                    return null;
+                    continue;
                 }
 
                 const xmlText = await res.text();
                 const $ = cheerio.load(xmlText, { xmlMode: true });
 
-                // Update channel name if changed
                 const authorName = $('author > name').first().text();
                 if (authorName && authorName !== channel.title) {
-                    await prisma.creatorChannel.update({
+                    await ((prisma as any).creatorChannel.update as any)({
                         where: { id: channel.id },
                         data: { title: authorName }
                     });
                 }
 
-                // 1. 영상 가져오기 (RSS 방식 - 빠르고 안정적이며 무료)
                 const entries = $('entry').toArray();
                 let newCount = 0;
                 let processedCount = 0;
 
                 for (const entry of entries) {
-                    if (processedCount >= 2) break; // 쇼츠를 제외한 순수 일반 영상 2개까지만 탐색
+                    if (processedCount >= 2) break;
 
                     const $entry = $(entry);
                     const videoId = $entry.find('yt\\:videoId').text();
 
-                    // 🚨 쇼츠(Shorts) 필터링: /shorts/ URL로 HEAD 요청을 보내어 200 OK(리다이렉트 없음)면 쇼츠로 간주하고 스킵
                     try {
                         const shortCheckRes = await fetch(`https://www.youtube.com/shorts/${videoId}`, { method: 'HEAD', redirect: 'manual' });
-                        if (shortCheckRes.status === 200) {
-                            continue; // 쇼츠 영상이므로 수집하지 않고 다음 영상으로 넘어감
-                        }
-                    } catch (e) {
-                        // 확인 불가 시 그냥 넘어감
-                    }
+                        if (shortCheckRes.status === 200) continue;
+                    } catch (e) { }
 
                     processedCount++;
 
@@ -94,28 +92,24 @@ export async function POST(req?: Request) {
                     const description = $entry.find('media\\:group > media\\:description').text();
                     const thumbnail = $entry.find('media\\:group > media\\:thumbnail').attr('url');
 
-                    const existing = await prisma.creatorVideo.findUnique({ where: { videoId } });
+                    const isRecommended = containsKeyword(title, keywordStrings) || containsKeyword(description, keywordStrings);
 
-                    if (!existing) {
-                        const isRecommended = containsKeyword(title, keywordStrings) || containsKeyword(description, keywordStrings);
-
-                        await prisma.creatorVideo.create({
-                            data: {
-                                channelId: channel.id,
-                                videoId,
-                                title,
-                                description: description.substring(0, 4000),
-                                url,
-                                thumbnail,
-                                publishedAt,
-                                isAiRecommended: isRecommended
-                            }
-                        });
-                        newCount++;
-                    }
+                    await ((prisma as any).creatorVideo.create as any)({
+                        data: {
+                            channelId: channel.id,
+                            videoId,
+                            title,
+                            description: description.substring(0, 4000),
+                            url,
+                            thumbnail,
+                            publishedAt,
+                            isAiRecommended: isRecommended
+                        }
+                    });
+                    newCount++;
                 }
 
-                await prisma.creatorChannel.update({
+                await ((prisma as any).creatorChannel.update as any)({
                     where: { id: channel.id },
                     data: {
                         lastScrapedAt: new Date(),
@@ -124,10 +118,14 @@ export async function POST(req?: Request) {
                     }
                 });
 
-                return { channel: channel.title, newVideos: newCount };
+                processed.push({ channel: channel.title, newVideos: newCount });
+
+                // 유튜브 서버에 대한 부하를 줄이기 위해 루프 사이에 약간의 딜레이(0.5초)를 줍니다.
+                await new Promise(resolve => setTimeout(resolve, 500));
+
             } catch (err: any) {
                 console.error(`Error processing channel ${channel.youtubeId}:`, err);
-                await prisma.creatorChannel.update({
+                await ((prisma as any).creatorChannel.update as any)({
                     where: { id: channel.id },
                     data: {
                         lastScrapedAt: new Date(),
@@ -135,12 +133,8 @@ export async function POST(req?: Request) {
                         lastScrapeError: err.message || 'Unknown error'
                     }
                 });
-                return null;
             }
-        });
-
-        const results = await Promise.all(processPromises);
-        const processed = results.filter((r: any) => r !== null);
+        }
 
         return NextResponse.json({ success: true, processed });
 
