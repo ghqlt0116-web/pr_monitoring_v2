@@ -64,7 +64,7 @@ export async function POST(req?: Request) {
             extracted.push({
               title: item.title,
               content: item.synopsis || item.title,
-              url: prog.url, // 사용자가 요청한 예고편 메인 게시판 URL로 연결
+              url: prog.url || '', // 사용자가 요청한 예고편 메인 게시판 URL로 연결
               thumb: item.thumb?.large || item.thumb?.medium,
               date: item.broaddate
             });
@@ -82,7 +82,7 @@ export async function POST(req?: Request) {
               extracted.push({
                 title: item.post_title,
                 content: textContent || item.post_title,
-                url: item.target_url || prog.url,
+                url: item.target_url || prog.url || '',
                 thumb: imgUrl,
                 date: item.date_created
               });
@@ -94,7 +94,7 @@ export async function POST(req?: Request) {
             // Extract program ID (bid) from config or URL
             let progId = conf.id;
             if (!progId) {
-              const match = prog.url.match(/([0-9]{15,})/);
+              const match = (prog.url || '').match(/([0-9]{15,})/);
               if (!match) throw new Error("Cannot extract program ID from URL: " + prog.url);
               progId = match[1];
             }
@@ -154,7 +154,7 @@ export async function POST(req?: Request) {
             }
 
             if (extracted.length === 0) {
-              results.push({ program: prog.title, newEpisode: 'Failed to extract items from list', rawUrl: prog.url });
+              results.push({ program: prog.title, newEpisode: 'Failed to extract items from list', rawUrl: prog.url || '' });
               console.error('Extraction failed for', prog.title);
             }
           } catch (e: any) {
