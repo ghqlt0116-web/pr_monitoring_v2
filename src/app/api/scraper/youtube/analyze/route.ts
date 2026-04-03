@@ -91,8 +91,7 @@ ${sampledComments.length > 0 ? sampledComments : "댓글 없음"}
             data: {
                 aiAnalyzedAt: new Date(),
                 aiSummary: parsed.summary,
-                aiRiskLevel: parsed.riskLevel,
-                isAiRecommended: parsed.isRelated ? true : false
+                aiRiskLevel: parsed.riskLevel
             }
         });
 

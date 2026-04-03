@@ -36,10 +36,8 @@ export async function POST(req?: Request) {
         // Promise.all 대신 순차적(for...of) 실행으로 변경하여 YouTube의 429 Too Many Requests (동시 접속 차단) 에러를 방지합니다.
         const processed = [];
 
-        for (const channel of channels) {
-            // 사용자의 요청: 재수집 시 기존 데이터(과거 잔여물)를 먼저 깔끔하게 비워줌 (에러가 나도 비워지도록 먼저 실행)
-            await ((prisma as any).creatorVideo.deleteMany as any)({ where: { channelId: channel.id } });
 
+        for (const channel of channels) {
             try {
                 const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.youtubeId}`;
                 const res = await fetch(feedUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, next: { revalidate: 0 } });
@@ -54,6 +52,8 @@ export async function POST(req?: Request) {
                             lastScrapeError: `HTTP ${res.status}`
                         }
                     });
+                    // 에러 시 화면에서 사라지길 원하셨으므로 싹 지움
+                    await ((prisma as any).creatorVideo.deleteMany as any)({ where: { channelId: channel.id } });
                     continue;
                 }
 
@@ -69,9 +69,10 @@ export async function POST(req?: Request) {
                 }
 
                 const entries = $('entry').toArray();
-                let newCount = 0;
+                let validVideos = [];
                 let processedCount = 0;
 
+                // 1차적으로 2개의 유효한(쇼츠 제외) 영상 데이터를 골라냅니다.
                 for (const entry of entries) {
                     if (processedCount >= 2) break;
 
@@ -92,21 +93,41 @@ export async function POST(req?: Request) {
                     const description = $entry.find('media\\:group > media\\:description').text();
                     const thumbnail = $entry.find('media\\:group > media\\:thumbnail').attr('url');
 
-                    const isRecommended = containsKeyword(title, keywordStrings) || containsKeyword(description, keywordStrings);
+                    validVideos.push({ videoId, title, url, publishedAt, description, thumbnail });
+                }
 
-                    await ((prisma as any).creatorVideo.create as any)({
-                        data: {
-                            channelId: channel.id,
-                            videoId,
-                            title,
-                            description: description.substring(0, 4000),
-                            url,
-                            thumbnail,
-                            publishedAt,
-                            isAiRecommended: isRecommended
-                        }
-                    });
-                    newCount++;
+                const validVideoIds = validVideos.map(v => v.videoId);
+
+                // 사용자의 요청: 최신 2개 영상에 해당하는 기록은 살려두고(AI 정보 보존), 나머지만 삭제!
+                await ((prisma as any).creatorVideo.deleteMany as any)({
+                    where: {
+                        channelId: channel.id,
+                        videoId: { notIn: validVideoIds } // 이번에 수집된 최신 2개는 삭제 대상에서 제외!
+                    }
+                });
+
+                let newCount = 0;
+                // 살아남은(또는 신규) 2개 영상 DB 처리
+                for (const video of validVideos) {
+                    const existing = await ((prisma as any).creatorVideo.findUnique as any)({ where: { videoId: video.videoId } });
+
+                    if (!existing) {
+                        const isRecommended = containsKeyword(video.title, keywordStrings) || containsKeyword(video.description, keywordStrings);
+
+                        await ((prisma as any).creatorVideo.create as any)({
+                            data: {
+                                channelId: channel.id,
+                                videoId: video.videoId,
+                                title: video.title,
+                                description: video.description.substring(0, 4000),
+                                url: video.url,
+                                thumbnail: video.thumbnail,
+                                publishedAt: video.publishedAt,
+                                isAiRecommended: isRecommended
+                            }
+                        });
+                        newCount++;
+                    }
                 }
 
                 await ((prisma as any).creatorChannel.update as any)({
