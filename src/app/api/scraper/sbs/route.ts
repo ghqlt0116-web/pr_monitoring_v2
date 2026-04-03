@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
         // 2. SBS '그것이 알고싶다' 예고편 게시판 파싱 (예시)
         // 실제 HTML 구조에 따라 DOM 셀렉터 수정 필요
-        const response = await fetch(sbsProgram.url, {
+        const response = await fetch(sbsProgram.url || '', {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
             }
