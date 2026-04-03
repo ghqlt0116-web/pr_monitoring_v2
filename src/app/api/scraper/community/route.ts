@@ -63,9 +63,9 @@ export async function POST() {
                 else if (site.includes('네이버') || target.url.includes('naver.com')) {
                     $('li.bx').each((i, el) => {
                         if (extracted.length >= 10) return false;
-                        const titleEl = $(el).find('a.api_txt_lines.total_tit');
-                        const descEl = $(el).find('div.api_txt_lines.desc');
-                        const authorEl = $(el).find('a.sub_txt.sub_name');
+                        const titleEl = $(el).find('a.api_txt_lines.total_tit, a.title_link'); // 신/구 버전 클래스 대응
+                        const descEl = $(el).find('div.api_txt_lines.desc, div.dsc_txt, div.api_txt_lines.dsc_txt');
+                        const authorEl = $(el).find('a.sub_txt.sub_name, a.name');
                         const title = titleEl.text().trim();
                         const link = titleEl.attr('href') || '#';
                         const content = descEl.text().trim();
