@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
-
-// [더미 파일] 
-// 이 파일은 깃허브 웹 업로드 시 과거에 존재했던 잔재 파일(communityPost 에러 유발)을 
-// 정상적인 빈 파일로 덮어쓰기(Overwrite) 하여 Vercel 빌드 에러를 방지하기 위한 안전장치입니다.
+import { prisma } from '@/lib/prisma';
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-    return NextResponse.json({ success: true, posts: [] });
-}
-
-export async function POST() {
-    return NextResponse.json({ success: true, posts: [] });
+    try {
+        const posts = await (prisma as any).communityPost.findMany({
+            orderBy: { publishedAt: 'desc' },
+            take: 200,
+            include: { target: true }
+        });
+        return NextResponse.json(posts);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 }
