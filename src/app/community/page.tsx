@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { RefreshCw, MonitorPlay, Youtube, Globe, Settings, LayoutDashboard, Plus, Trash2, ArrowLeft, Download, ShieldAlert } from 'lucide-react';
+import { RefreshCw, MonitorPlay, Youtube, Globe, Settings, LayoutDashboard, Plus, Trash2, ArrowLeft, Download, ShieldAlert, Activity } from 'lucide-react';
 import styles from '../page.module.css';
 
 export default function CommunityDashboard() {
@@ -119,30 +119,62 @@ export default function CommunityDashboard() {
 
     const filteredPosts = posts.filter(p => filterTarget === 'ALL' || p.targetId.toString() === filterTarget);
 
+    const Sidebar = () => (
+        <aside className={`glass-panel ${styles.sidebar}`}>
+            <div className={styles.brand}>
+                <div className={styles.logoBox}>
+                    <LayoutDashboard size={24} color="#10b981" />
+                </div>
+                <h1>SKB PR 모니터링</h1>
+            </div>
+
+            <nav className={styles.nav}>
+                <div className={styles.navGroup}>
+                    <Link href="/" replace style={{ textDecoration: 'none' }}>
+                        <div className={styles.navGroupHeader}>
+                            <span><MonitorPlay size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#3b82f6" />시사 프로그램 모니터링</span>
+                        </div>
+                    </Link>
+                </div>
+
+                <div className={styles.navGroup}>
+                    <Link href="/creators" replace style={{ textDecoration: 'none' }}>
+                        <div className={styles.navGroupHeader}>
+                            <span><Youtube size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#ef4444" />유튜버 모니터링</span>
+                        </div>
+                    </Link>
+                </div>
+
+                <div className={styles.navGroup}>
+                    <div className={`${styles.navGroupHeader} ${styles.activeNav}`}>
+                        <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />외부 커뮤니티</span>
+                    </div>
+                    <div className={styles.subNav}>
+                        <a href="#" className={`${styles.navItem} ${currentView === 'dashboard' ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); setCurrentView('dashboard'); }}>
+                            <Activity size={18} /> 모니터링 동향
+                        </a>
+                        <a href="#" className={`${styles.navItem} ${currentView === 'settings' ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); setCurrentView('settings'); }}>
+                            <Settings size={18} /> 커뮤니티 설정
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+    );
+
     if (currentView === 'settings') {
         return (
             <div className={styles.container}>
-                <aside className={`glass-panel ${styles.sidebar}`}>
-                    <div className={styles.brand}>
-                        <div className={styles.logoBox}>
-                            <LayoutDashboard size={24} color="#10b981" />
-                        </div>
-                        <h1>SKB PR 모니터링</h1>
-                    </div>
-                </aside>
-
+                <Sidebar />
                 <main className={styles.main}>
                     <header className={`animate-fade-in ${styles.header}`}>
                         <div>
-                            <button onClick={() => setCurrentView('dashboard')} className={styles.backBtn}>
-                                <ArrowLeft size={18} style={{ marginRight: '8px' }} /> 돌아가기
-                            </button>
-                            <h2 className={styles.pageTitle} style={{ marginTop: '1rem' }}>⚙️ 커뮤니티 타겟 & 무결성 관리</h2>
+                            <h2 className={styles.pageTitle} style={{ marginTop: '0.5rem' }}>⚙️ 커뮤니티 타겟 & 로직 관리</h2>
+                            <p className={styles.subtitle} style={{ margin: 0, marginTop: '0.5rem' }}>커뮤니티 전용 파싱 엔진, 대상 사이트 및 키워드 설정</p>
                         </div>
                     </header>
 
                     <div className={styles.configGrid}>
-                        {/* 타겟 사이트 설정 파트 */}
                         <section className="glass-panel" style={{ padding: '2rem' }}>
                             <h3 style={{ marginBottom: '1.5rem', color: '#10b981', display: 'flex', alignItems: 'center' }}>
                                 <Globe size={20} style={{ marginRight: '8px' }} />
@@ -179,7 +211,6 @@ export default function CommunityDashboard() {
                             </div>
                         </section>
 
-                        {/* 키워드 관리 파트 */}
                         <section className="glass-panel" style={{ padding: '2rem' }}>
                             <h3 style={{ marginBottom: '1.5rem', color: '#f59e0b', display: 'flex', alignItems: 'center' }}>
                                 <ShieldAlert size={20} style={{ marginRight: '8px' }} />
@@ -208,42 +239,7 @@ export default function CommunityDashboard() {
 
     return (
         <div className={styles.container}>
-            <aside className={`glass-panel ${styles.sidebar}`}>
-                <div className={styles.brand}>
-                    <div className={styles.logoBox}>
-                        <LayoutDashboard size={24} color="#10b981" />
-                    </div>
-                    <h1>SKB PR 모니터링</h1>
-                </div>
-
-                <nav className={styles.nav}>
-                    <div className={styles.navGroup}>
-                        <Link href="/" replace style={{ textDecoration: 'none' }}>
-                            <div className={styles.navGroupHeader}>
-                                <span><MonitorPlay size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#3b82f6" />시사 프로그램 모니터링</span>
-                            </div>
-                        </Link>
-                    </div>
-
-                    <div className={styles.navGroup}>
-                        <Link href="/creators" replace style={{ textDecoration: 'none' }}>
-                            <div className={styles.navGroupHeader}>
-                                <span><Youtube size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#ef4444" />유튜버 모니터링</span>
-                            </div>
-                        </Link>
-                    </div>
-
-                    <div className={styles.navGroup}>
-                        <div className={`${styles.navGroupHeader} ${styles.activeNav}`}>
-                            <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />외부 커뮤니티</span>
-                        </div>
-                        <div className={styles.subNav}>
-                            <a href="#" className={`${styles.navItem} ${styles.active}`}>게시판 및 블로그 동향</a>
-                        </div>
-                    </div>
-                </nav>
-            </aside>
-
+            <Sidebar />
             <main className={styles.main}>
                 <header className={`animate-fade-in ${styles.header}`}>
                     <div>
@@ -251,10 +247,7 @@ export default function CommunityDashboard() {
                         <p className={styles.subtitle} style={{ margin: 0, marginTop: '0.5rem' }}>텍스트 기반의 여론 및 주요 커뮤니티 전파 상황 추적</p>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={() => setCurrentView('settings')} className={`${styles.btn} glass-panel`} style={{ background: 'var(--surface-color)' }}>
-                            <Settings size={18} /> 관리/설정
-                        </button>
-                        <button onClick={() => handleScrape(false)} disabled={scraping} className={`${styles.btn} ${styles.btnPrimary}`}>
+                        <button onClick={() => handleScrape(false)} disabled={scraping} className={styles.scrapeBtn} style={{ background: '#10b981' }}>
                             <RefreshCw size={18} className={scraping ? styles.spin : ''} />
                             {scraping ? '수집 중...' : '새로고침 (데이터 연동)'}
                         </button>
