@@ -5,6 +5,35 @@ import { containsKeyword } from '@/lib/creatorAnalyze';
 
 export async function GET(req: Request) { return POST(req); }
 
+function parseRelativeTime(text: string) {
+    if (!text) return new Date();
+    const now = new Date();
+    const num = parseInt(text.replace(/[^0-9]/g, ''), 10) || 1;
+
+    if (text.includes('분') || text.includes('minute')) now.setMinutes(now.getMinutes() - num);
+    else if (text.includes('시간') || text.includes('hour')) now.setHours(now.getHours() - num);
+    else if (text.includes('일') || text.includes('day')) now.setDate(now.getDate() - num);
+    else if (text.includes('주') || text.includes('week')) now.setDate(now.getDate() - (num * 7));
+    else if (text.includes('달') || text.includes('개월') || text.includes('month')) now.setMonth(now.getMonth() - num);
+    else if (text.includes('년') || text.includes('year')) now.setFullYear(now.getFullYear() - num);
+
+    return now;
+}
+
+function parseRelativeDate(text: string): Date {
+    if (!text) return new Date();
+    const now = new Date();
+    const val = parseInt(text.replace(/[^0-9]/g, '')) || 1;
+    if (text.includes('상영') || text.includes('스트리밍') || text.includes('live')) return now; // Live case
+    if (text.includes('분') || text.includes('minute')) now.setMinutes(now.getMinutes() - val);
+    else if (text.includes('시간') || text.includes('hour')) now.setHours(now.getHours() - val);
+    else if (text.includes('일') || text.includes('day')) now.setDate(now.getDate() - val);
+    else if (text.includes('주') || text.includes('week')) now.setDate(now.getDate() - (val * 7));
+    else if (text.includes('개월') || text.includes('month')) now.setMonth(now.getMonth() - val);
+    else if (text.includes('년') || text.includes('year')) now.setFullYear(now.getFullYear() - val);
+    return now;
+}
+
 export async function POST(req?: Request) {
     try {
         const body = req ? await req.json().catch(() => ({})) : {};
@@ -92,13 +121,18 @@ export async function POST(req?: Request) {
                                 const videoId = video.videoId;
                                 const title = video.title?.runs?.[0]?.text || '';
                                 const description = video.descriptionSnippet?.runs?.map((r: any) => r.text).join('') || title;
-                                const thumbnail = video.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+                                const thumbs = video.thumbnail?.thumbnails || [];
+                                const thumbnail = thumbs.length > 0 ? thumbs[thumbs.length - 1].url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+                                const publishedTimeText = video.publishedTimeText?.simpleText || '';
+                                const publishedAt = parseRelativeTime(publishedTimeText);
 
                                 validVideos.push({
                                     videoId,
                                     title,
                                     url: `https://www.youtube.com/watch?v=${videoId}`,
-                                    publishedAt: new Date(),
+                                    publishedAt,
                                     description,
                                     thumbnail
                                 });
