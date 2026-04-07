@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { GoogleGenAI } from '@google/genai';
-// @ts-ignore
-import { YoutubeTranscript } from 'youtube-transcript';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -39,22 +37,9 @@ export async function POST(req: Request) {
         // 3. Sample comments
         const sampledComments = comments.slice(0, 50).join('\n---\n');
 
-        // 3.5. Fetch Transcript (자막 전문 수집 - 팩트 정확도 향상용)
-        let transcriptText = "";
-        try {
-            const transcriptRes = await YoutubeTranscript.fetchTranscript(videoId);
-            transcriptText = transcriptRes.map((t: any) => t.text).join(' ');
-        } catch (e) {
-            console.warn("Transcript extraction failed for video: ", videoId);
-        }
-
-        const transcriptContext = transcriptText
-            ? `[유튜버 실제 발언 자막 전문]\n${transcriptText.substring(0, 8000)}\n\n`
-            : `[자막 추출 불가 - 메타데이터와 댓글만으로 분석 진행]\n\n`;
-
         // 4. Analyze with Gemini (Upgraded PR Expert Prompt)
         const prompt = `당신은 대한민국 최고 수준의 기업 PR(홍보실) 위기관리 전문가입니다.
-다음은 IT/테크 유튜버 영상의 메타데이터(제목/설명), 실제 영상의 발언 자막(Transcript), 그리고 영상에 가장 많은 공감을 받은 베스트 시청자 댓글 상위 50개입니다.
+다음은 IT/테크 유튜버 영상의 메타데이터(제목/설명)와 이 영상에 가장 많은 공감을 받은 베스트 시청자 댓글 상위 50개입니다.
 
 이 영상이 아래의 [당사 핵심 모니터링 키워드] 중 하나라도 관련된 리스크 이슈를 다루고 있는지 판별하세요.
 
@@ -67,7 +52,6 @@ export async function POST(req: Request) {
 [영상 메타데이터]
 ${videoContext}
 
-${transcriptContext}
 [댓글 여론 목록]
 ${sampledComments.length > 0 ? sampledComments : "댓글 없음"}
 
