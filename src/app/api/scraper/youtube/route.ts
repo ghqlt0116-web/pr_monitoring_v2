@@ -122,8 +122,9 @@ export async function POST(req?: Request) {
                                 const title = video.title?.runs?.[0]?.text || '';
                                 const description = video.descriptionSnippet?.runs?.map((r: any) => r.text).join('') || title;
 
-                                const thumbs = video.thumbnail?.thumbnails || [];
-                                const thumbnail = thumbs.length > 0 ? thumbs[thumbs.length - 1].url : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+                                // ytInitialData의 썸네일 배열은 화면 렌더링용 작은 사이즈 위주로 들어있어서 화질이 떨어질 수 있습니다.
+                                // 때문에 유튜브 공식 고화질 썸네일 규칙(maxresdefault.jpg)을 강제로 생성해서 박아넣습니다.
+                                const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
                                 const publishedTimeText = video.publishedTimeText?.simpleText || '';
                                 const publishedAt = parseRelativeTime(publishedTimeText);
@@ -155,7 +156,7 @@ export async function POST(req?: Request) {
                                 url: `https://www.youtube.com/watch?v=${m1}`,
                                 publishedAt: new Date(),
                                 description: m2,
-                                thumbnail: `https://i.ytimg.com/vi/${m1}/hqdefault.jpg`
+                                thumbnail: `https://i.ytimg.com/vi/${m1}/maxresdefault.jpg`
                             });
                             count++;
                         }
