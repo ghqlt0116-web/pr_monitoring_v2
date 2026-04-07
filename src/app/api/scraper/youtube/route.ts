@@ -198,6 +198,12 @@ export async function POST(req?: Request) {
                             }
                         });
                         newCount++;
+                    } else if (existing.thumbnail !== video.thumbnail) {
+                        // 기존 영상이라도 썸네일 고화질(maxresdefault.jpg)로 강제 업데이트 처리
+                        await ((prisma as any).creatorVideo.update as any)({
+                            where: { videoId: video.videoId },
+                            data: { thumbnail: video.thumbnail }
+                        });
                     }
                 }
 
