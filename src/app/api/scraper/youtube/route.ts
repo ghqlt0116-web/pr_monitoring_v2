@@ -38,7 +38,7 @@ export async function POST(req?: Request) {
 
         for (const channel of channels) {
             try {
-                const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.youtubeId}`;
+                const feedUrl = `https://www.youtube.com/channel/${channel.youtubeId}/videos`;
                 const res = await fetch(feedUrl, {
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -49,7 +49,7 @@ export async function POST(req?: Request) {
                 });
 
                 if (!res.ok) {
-                    console.error(`Failed to fetch RSS for ${channel.title}: ${res.status}`);
+                    console.error(`Failed to fetch HTML for ${channel.title}: ${res.status}`);
                     await ((prisma as any).creatorChannel.update as any)({
                         where: { id: channel.id },
                         data: {
@@ -58,48 +58,78 @@ export async function POST(req?: Request) {
                             lastScrapeError: `HTTP ${res.status}`
                         }
                     });
-                    // 에러 시 화면에서 사라지길 원하셨으므로 싹 지움
-                    await ((prisma as any).creatorVideo.deleteMany as any)({ where: { channelId: channel.id } });
+                    // 에러 시 기존 화면을 갑자기 빈 화면으로 만들지 않도록 삭제 로직(deleteMany) 제거! (회복 탄력성)
                     continue;
                 }
 
-                const xmlText = await res.text();
-                const $ = cheerio.load(xmlText, { xmlMode: true });
+                const html = await res.text();
+                let validVideos: any[] = [];
 
-                const authorName = $('author > name').first().text();
-                if (authorName && authorName !== channel.title) {
-                    await ((prisma as any).creatorChannel.update as any)({
-                        where: { id: channel.id },
-                        data: { title: authorName }
-                    });
+                try {
+                    // ytInitialData 파싱 (글로벌 변수에서 JSON 추출)
+                    const dataStrMatch = html.match(/ytInitialData[ \n\r=]+(\{.*?\});/);
+                    if (dataStrMatch && dataStrMatch[1]) {
+                        const data = JSON.parse(dataStrMatch[1]);
+
+                        const authorName = data?.metadata?.channelMetadataRenderer?.title;
+                        if (authorName && authorName !== channel.title) {
+                            await ((prisma as any).creatorChannel.update as any)({
+                                where: { id: channel.id },
+                                data: { title: authorName }
+                            });
+                        }
+
+                        // 비디오 탭 탐색 (쇼츠 제외)
+                        const tabs = data.contents?.twoColumnBrowseResultsRenderer?.tabs || [];
+                        const videosTab = tabs.find((t: any) => t.tabRenderer?.title === 'Videos' || t.tabRenderer?.title === '동영상');
+                        const items = videosTab?.tabRenderer?.content?.richGridRenderer?.contents || [];
+
+                        for (const item of items) {
+                            if (validVideos.length >= 2) break;
+                            const video = item.richItemRenderer?.content?.videoRenderer;
+
+                            if (video && video.videoId) {
+                                const videoId = video.videoId;
+                                const title = video.title?.runs?.[0]?.text || '';
+                                const description = video.descriptionSnippet?.runs?.map((r: any) => r.text).join('') || title;
+                                const thumbnail = video.thumbnail?.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+                                validVideos.push({
+                                    videoId,
+                                    title,
+                                    url: `https://www.youtube.com/watch?v=${videoId}`,
+                                    publishedAt: new Date(),
+                                    description,
+                                    thumbnail
+                                });
+                            }
+                        }
+                    }
+                } catch (parseError) {
+                    console.error("JSON parsing failed, regex fallback: ", parseError);
+                    // 최후의 수단: 문자열 정규식 추출
+                    const regex = /"videoId":"([^"]+)","title":\{"runs":\[\{"text":"([^"]+)"\}\]\}/g;
+                    let m: RegExpExecArray | null;
+                    let count = 0;
+                    while ((m = regex.exec(html)) !== null && count < 2) {
+                        const m1 = m![1];
+                        const m2 = m![2];
+                        if (!validVideos.find(v => v.videoId === m1)) {
+                            validVideos.push({
+                                videoId: m1,
+                                title: m2,
+                                url: `https://www.youtube.com/watch?v=${m1}`,
+                                publishedAt: new Date(),
+                                description: m2,
+                                thumbnail: `https://i.ytimg.com/vi/${m1}/hqdefault.jpg`
+                            });
+                            count++;
+                        }
+                    }
                 }
 
-                const entries = $('entry').toArray();
-                let validVideos = [];
-                let processedCount = 0;
-
-                // 1차적으로 2개의 유효한(쇼츠 제외) 영상 데이터를 골라냅니다.
-                for (const entry of entries) {
-                    if (processedCount >= 2) break;
-
-                    const $entry = $(entry);
-                    const videoId = $entry.find('yt\\:videoId').text();
-
-                    try {
-                        const shortCheckRes = await fetch(`https://www.youtube.com/shorts/${videoId}`, { method: 'HEAD', redirect: 'manual' });
-                        if (shortCheckRes.status === 200) continue;
-                    } catch (e) { }
-
-                    processedCount++;
-
-                    const title = $entry.find('title').text();
-                    const url = $entry.find('link').attr('href') || `https://www.youtube.com/watch?v=${videoId}`;
-                    const publishedAtRaw = $entry.find('published').text();
-                    const publishedAt = new Date(publishedAtRaw);
-                    const description = $entry.find('media\\:group > media\\:description').text();
-                    const thumbnail = $entry.find('media\\:group > media\\:thumbnail').attr('url');
-
-                    validVideos.push({ videoId, title, url, publishedAt, description, thumbnail });
+                if (validVideos.length === 0) {
+                    throw new Error("No videos found (YouTube blocked IP or empty channel)");
                 }
 
                 const validVideoIds = validVideos.map(v => v.videoId);
