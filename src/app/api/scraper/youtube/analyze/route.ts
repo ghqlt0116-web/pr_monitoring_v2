@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { GoogleGenAI } from '@google/genai';
+// @ts-ignore
 import { YoutubeTranscript } from 'youtube-transcript';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
