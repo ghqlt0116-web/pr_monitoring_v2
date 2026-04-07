@@ -31,14 +31,15 @@ export async function POST(req: Request) {
 ${videoContext}
 
 [지시사항]
-1. 만약 위 핵심 키워드와 상관없는 일반글(유머, 게임 등)이라면, 짧게 2줄 요약만 제공하세요. (riskLevel은 "하", isRelated는 false)
+1. 팩트 기반 추론(Reasoning): 게시글에 명시된 사실만을 바탕으로 논리적으로 분석하세요. 없는 사실을 지어내거나(Fabrication), 억지스러운 인과관계를 만들어내지 마세요.
+2. 무관한 게시글 처리: 위 핵심 키워드와 상관없는 일반글(유머, 게임 등)이라면, 억지로 리스크를 짜내지 말고 짧게 2줄 요약만 제공하세요. (riskLevel은 "하", isRelated는 false)
    - 📌 게시글 내용: (진짜 내용 1줄 요약)
    - 💬 확인된 반응: (게시글 성격 요약)
 
-2. 만약 관련 이슈를 다루고 있다면, 임원진에게 보고할 수 있는 [경영진 리포트] 형식으로 엄격하게 작성하세요.
-   - ■ 게시글 주장 요약
+3. 관련 게시글 처리: 당사와 직/간접적 이슈를 다루고 있다면, 임원진이 빠르게 파악할 수 있도록 불필요한 미사여구를 빼고 [경영진 리포트] 형식으로 간결하게 도식화하세요.
+   - ■ 게시글 주요 사실관계 요약
    - ■ 민심 및 여론 파급력
-   - ■ SKB 리스크 진단 및 대응 필요성
+   - ■ SKB 리스크 진단 (팩트 기반의 객관적 비즈니스 영향력)
 
 [결과 포맷 (엄격히 JSON 형태 준수)]
 {
@@ -50,7 +51,10 @@ ${videoContext}
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
-            config: { responseMimeType: 'application/json' }
+            config: {
+                responseMimeType: 'application/json',
+                temperature: 0.2
+            }
         });
 
         const resultText = response.text;
