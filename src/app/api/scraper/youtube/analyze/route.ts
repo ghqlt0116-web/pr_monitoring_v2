@@ -24,8 +24,8 @@ export async function POST(req: Request) {
         const video = await (prisma as any).creatorVideo.findUnique({ where: { videoId } });
         const videoContext = video ? `영상 제목: ${video.title}\n영상 설명: ${video.description}` : '';
 
-        // 2. Fetch comments from YouTube Data API (Top 100 comments by relevance)
-        const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=100&order=relevance&key=${process.env.YOUTUBE_API_KEY}`);
+        // 2. Fetch comments from YouTube Data API (Top 50 comments by relevance)
+        const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=50&order=relevance&key=${process.env.YOUTUBE_API_KEY}`);
         const ytData = await ytRes.json();
 
         if (ytData.error) {

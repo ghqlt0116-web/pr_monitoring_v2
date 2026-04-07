@@ -218,9 +218,9 @@ export async function POST(req?: Request) {
 
                 processed.push({ channel: channel.title, newVideos: newCount });
 
-                // 유튜브 404 차단을 우회하기 위해 한 채널 파싱이 끝날 때마다 충분한 휴식(1.5초)을 부여
-                // Vercel 타임아웃을 고려하여 지나치게 길게는 주지 않음
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // 유튜브 404 차단을 우회하기 위해 한 채널 파싱이 끝날 때마다 아주 짧은 휴식(0.3초)만 부여
+                // Vercel 서버리스 타임아웃 방지
+                await new Promise(resolve => setTimeout(resolve, 300));
 
             } catch (err: any) {
                 console.error(`Error processing channel ${channel.youtubeId}:`, err);
