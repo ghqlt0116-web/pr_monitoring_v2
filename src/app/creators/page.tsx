@@ -65,8 +65,8 @@ export default function CreatorsDashboard() {
 
     useEffect(() => {
         fetchData();
-        // 접속 시 백그라운드로 자동 스크래핑 (서버에서 5시간 쿨타임으로 방어)
-        handleScrape(true);
+        // Vercel IP 차단(YouTube 404/429) 방지를 위해 페이지 접속 시 자동 스크래핑 비활성화
+        // 사용자가 명시적으로 '데이터 갱신' 버튼을 누를 때만 동작하도록 변경
     }, [currentView]);
 
     const filteredVideos = videos.filter(vid => {

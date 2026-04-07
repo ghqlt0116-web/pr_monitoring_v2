@@ -12,8 +12,7 @@ export async function POST(req?: Request) {
 
         if (!force) {
             const recentCh = await (prisma as any).creatorChannel.findFirst({
-                orderBy: { lastScrapedAt: 'desc' },
-                where: { lastScrapeStatus: 'SUCCESS' }
+                orderBy: { lastScrapedAt: 'desc' }
             });
 
             if (recentCh && recentCh.lastScrapedAt) {
@@ -24,8 +23,8 @@ export async function POST(req?: Request) {
             }
         }
 
-        const channels = await prisma.creatorChannel.findMany();
-        const dbKeywords = await prisma.creatorKeyword.findMany({ where: { isActive: true } });
+        const channels = await (prisma as any).creatorChannel.findMany();
+        const dbKeywords = await (prisma as any).creatorKeyword.findMany({ where: { isActive: true } });
         const keywordStrings = dbKeywords.map((k: any) => k.keyword);
 
         // Default keywords if DB is empty
@@ -40,7 +39,14 @@ export async function POST(req?: Request) {
         for (const channel of channels) {
             try {
                 const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.youtubeId}`;
-                const res = await fetch(feedUrl, { headers: { 'User-Agent': 'Mozilla/5.0' }, next: { revalidate: 0 } });
+                const res = await fetch(feedUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+                        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
+                    },
+                    next: { revalidate: 0 }
+                });
 
                 if (!res.ok) {
                     console.error(`Failed to fetch RSS for ${channel.title}: ${res.status}`);
@@ -141,8 +147,9 @@ export async function POST(req?: Request) {
 
                 processed.push({ channel: channel.title, newVideos: newCount });
 
-                // 유튜브 서버에 대한 부하를 줄이기 위해 루프 사이에 약간의 딜레이(0.5초)를 줍니다.
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // 유튜브 404 차단을 우회하기 위해 한 채널 파싱이 끝날 때마다 충분한 휴식(1.5초)을 부여
+                // Vercel 타임아웃을 고려하여 지나치게 길게는 주지 않음
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
             } catch (err: any) {
                 console.error(`Error processing channel ${channel.youtubeId}:`, err);
