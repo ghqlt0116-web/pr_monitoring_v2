@@ -313,7 +313,7 @@ export default function CommunityDashboard() {
                                 processedPosts.map((post) => (
                                     <article key={post.id} className={`glass-panel ${styles.card} animate-fade-in`}>
                                         <div className={styles.cardHeader} style={{ flexWrap: 'wrap' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', width: '100%', marginBottom: '1rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', width: '100%', marginBottom: '0.5rem' }}>
                                                 <div style={{
                                                     width: '8px', height: '8px', borderRadius: '50%',
                                                     backgroundColor: post.aiRiskLevel === '상' ? 'var(--risk-high)' : post.aiRiskLevel === '중' ? 'var(--risk-mid)' : post.aiRiskLevel === '하' ? 'var(--risk-low)' : '#6b7280',
@@ -321,29 +321,24 @@ export default function CommunityDashboard() {
                                                 }} />
                                                 <span className={styles.channelLabel} style={{ background: '#10b981', color: 'black' }}>{post.target?.siteName || '커뮤니티'}</span>
                                             </div>
-
-                                            {(!post.matchedKws || post.matchedKws.length === 0) && (
-                                                <span style={{ display: 'inline-block', borderColor: 'var(--text-muted)', color: 'var(--text-muted)', whiteSpace: 'nowrap', padding: '0.2rem 0.5rem', border: '1px solid var(--text-muted)', borderRadius: '4px', fontSize: '0.75rem', marginBottom: '1rem' }}>
-                                                    ⚪ 키워드 미감지
-                                                </span>
-                                            )}
-
-                                            {post.matchedKws && post.matchedKws.length > 0 && (
-                                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', flex: 1, marginBottom: '1rem' }}>
-                                                    <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                                                        🔑 키워드: {post.matchedKws.map((kw: string) => kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')).join(' | ')}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            <h3 className={styles.programTitle} style={{ fontSize: '1.1rem', width: '100%' }}>{post.title}</h3>
+                                            <h3 className={styles.programTitle} style={{ fontSize: '1.1rem', width: '100%', marginBottom: '0.5rem' }}>{post.title}</h3>
                                         </div>
 
                                         <div className={styles.cardContent}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.8rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.8rem', flexWrap: 'wrap' }}>
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                     <Calendar size={14} /> 게시일: {new Date(post.publishedAt).toLocaleDateString()}
                                                 </span>
+
+                                                {(!post.matchedKws || post.matchedKws.length === 0) ? (
+                                                    <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                                        ⚪ 미감지
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                        🔑 {post.matchedKws.map((kw: string) => kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')).join(' | ')}
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {post.aiSummary ? (

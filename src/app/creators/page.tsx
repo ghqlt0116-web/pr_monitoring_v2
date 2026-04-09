@@ -372,7 +372,7 @@ export default function CreatorsDashboard() {
                             <div className={styles.grid}>
                                 {processedVideos.map((vid, idx) => (
                                     <article key={vid.id} className={`glass-panel animate-fade-in ${styles.card}`} style={{ animationDelay: `${0.1 * (idx % 5)}s` }}>
-                                        <div className={styles.cardHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                        <div className={styles.cardHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '1rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                                                 <div style={{
                                                     width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
@@ -381,21 +381,7 @@ export default function CreatorsDashboard() {
                                                 }} />
                                                 <span className={styles.channelLabel} style={{ wordBreak: 'keep-all' }}>[Tier {vid.channel?.tier || 3}] {vid.channel?.title || 'Unknown'}</span>
                                             </div>
-
-                                            {(vid as any).matchedKws.length === 0 && (
-                                                <span className={styles.riskBadge} style={{ borderColor: 'var(--text-muted)', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }} title="자막 미제공 또는 키워드 미감지 영상입니다. 썸네일/제목이 의심될 경우 클릭하여 강제 분석하세요">
-                                                    ⚪ 키워드 미감지
-                                                </span>
-                                            )}
                                         </div>
-
-                                        {(vid as any).matchedKws.length > 0 && (
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
-                                                <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                                                    🔑 키워드: {(vid as any).matchedKws.map((kw: string) => kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')).join(' | ')}
-                                                </span>
-                                            </div>
-                                        )}
 
                                         {vid.thumbnail && (
                                             <div className={styles.imageWrapper}>
@@ -405,7 +391,20 @@ export default function CreatorsDashboard() {
 
                                         <div className={styles.cardBody}>
                                             <h4 className={styles.epTitle}>{vid.title}</h4>
-                                            <p className={styles.epDate}>{new Date(vid.publishedAt).toLocaleString()}</p>
+
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem', marginBottom: '1.2rem', gap: '1rem', flexWrap: 'wrap' }}>
+                                                <p className={styles.epDate} style={{ margin: 0 }}>{new Date(vid.publishedAt).toLocaleString()}</p>
+
+                                                {(vid as any).matchedKws.length === 0 ? (
+                                                    <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                                        ⚪ 미감지
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.08)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                        🔑 {(vid as any).matchedKws.map((kw: string) => kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')).join(' | ')}
+                                                    </span>
+                                                )}
+                                            </div>
 
                                             {/* Track B Analysis Result Box */}
                                             {vid.aiSummary ? (
