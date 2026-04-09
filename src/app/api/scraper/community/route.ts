@@ -15,8 +15,20 @@ export async function POST() {
                 let parsedUrl = target.url.trim();
 
                 // 1. URL 자동 변환 로직 (네이버/티스토리 등 대표 블로그 RSS 백도어 지원)
-                // 만약 사용자가 'https://blog.naver.com/bizzy78' 라고 쳐도 알아서 피드를 찾음
-                if (parsedUrl.includes('blog.naver.com') && !parsedUrl.includes('rss')) {
+                if (parsedUrl.includes('in.naver.com')) {
+                    try {
+                        const inRes = await fetch(parsedUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                        if (inRes.ok) {
+                            const html = await inRes.text();
+                            const spyMatch = html.match(/blog\.naver\.com\/([a-zA-Z0-9_\-]+)/);
+                            if (spyMatch) {
+                                parsedUrl = `https://rss.blog.naver.com/${spyMatch[1]}.xml`;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Influencer parsing error:', e);
+                    }
+                } else if (parsedUrl.includes('blog.naver.com') && !parsedUrl.includes('rss')) {
                     const parts = parsedUrl.split('/');
                     const blogId = parts[parts.length - 1]?.split('?')[0];
                     if (blogId) parsedUrl = `https://rss.blog.naver.com/${blogId}.xml`;

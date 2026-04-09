@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { RefreshCw, MonitorPlay, Youtube, Globe, Settings, LayoutDashboard, Plus, Trash2, ArrowLeft, Download, ShieldAlert, Activity, Clock, User, Calendar, FileText, ExternalLink, Sparkles } from 'lucide-react';
 import styles from '../page.module.css';
@@ -18,7 +18,9 @@ export default function CommunityDashboard() {
     const [newTargetUrl, setNewTargetUrl] = useState('');
     const [newKeyword, setNewKeyword] = useState('');
     const [newSubKeyword, setNewSubKeyword] = useState('');
+    const [newExcludeKeyword, setNewExcludeKeyword] = useState('');
     const [filterTarget, setFilterTarget] = useState<string>('ALL');
+    const [filterKeyword, setFilterKeyword] = useState<string>('ALL');
 
     const fetchData = async () => {
         setLoading(true);
@@ -86,7 +88,10 @@ export default function CommunityDashboard() {
         if (!main) return;
 
         const subs = newSubKeyword.split(',').map(s => s.trim()).filter(s => s);
-        let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}`) : [main];
+        const excludes = newExcludeKeyword.split(',').map(s => s.trim()).filter(s => s);
+
+        const excludeStr = excludes.length > 0 ? '-' + excludes.join('-') : '';
+        let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}${excludeStr}`) : [`${main}${excludeStr}`];
 
         let hasError = false;
         for (const word of newItems) {
@@ -101,6 +106,7 @@ export default function CommunityDashboard() {
 
         setNewKeyword('');
         setNewSubKeyword('');
+        setNewExcludeKeyword('');
         fetchData();
     };
 
@@ -162,18 +168,44 @@ export default function CommunityDashboard() {
         document.body.removeChild(link);
     };
 
-    const processedPosts = posts.filter(p => {
-        if (filterTarget !== 'ALL' && p.targetId.toString() !== filterTarget) return false;
-        return true;
-    }).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-        .map(post => {
-            const spacelessText = (post.title + ' ' + (post.content || '')).toLowerCase().replace(/\s+/g, '');
-            const matched = keywords.filter(k => k.isActive).map(k => k.keyword).filter(k => {
-                const subKws = k.split('+');
-                return subKws.every((sub: string) => spacelessText.includes(sub.toLowerCase().replace(/\s+/g, '')));
+    const processedPosts = useMemo(() => {
+        let result = posts;
+        if (filterTarget !== 'ALL') result = result.filter(p => p.targetId.toString() === filterTarget);
+        if (filterKeyword !== 'ALL') {
+            const kwStr = filterKeyword.toLowerCase().replace(/\s+/g, '');
+            const parts = kwStr.split('-');
+            const reqParts = parts[0].split('+');
+            const exclParts = parts.slice(1);
+
+            result = result.filter(p => {
+                const txt = (p.title + ' ' + (p.content || '')).toLowerCase().replace(/\s+/g, '');
+                const hasAllReq = reqParts.every(req => txt.includes(req));
+                if (!hasAllReq) return false;
+                if (exclParts.length > 0) {
+                    const hasExcluded = exclParts.some(ex => ex.length > 0 && txt.includes(ex));
+                    if (hasExcluded) return false;
+                }
+                return true;
             });
-            return { ...post, matchedKws: matched };
-        });
+        }
+
+        return result.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+            .map(post => {
+                const spacelessText = (post.title + ' ' + (post.content || '')).toLowerCase().replace(/\s+/g, '');
+                const matched = keywords.filter(k => k.isActive).map(k => k.keyword).filter(k => {
+                    const parts = k.split('-');
+                    const reqParts = parts[0].split('+');
+                    const exclParts = parts.slice(1);
+                    const hasAllReq = reqParts.every((req: string) => spacelessText.includes(req.toLowerCase().replace(/\s+/g, '')));
+                    if (!hasAllReq) return false;
+                    if (exclParts.length > 0) {
+                        return !exclParts.some((ex: string) => ex.length > 0 && spacelessText.includes(ex.toLowerCase().replace(/\s+/g, '')));
+                    }
+                    return true;
+                });
+                return { ...post, matchedKws: matched };
+            });
+    }, [posts, filterTarget, filterKeyword, keywords]);
 
     const Sidebar = () => (
         <aside className={`glass-panel ${styles.sidebar}`}>
@@ -262,7 +294,13 @@ export default function CommunityDashboard() {
                         <section style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
                             <select value={filterTarget} onChange={e => setFilterTarget(e.target.value)} className={styles.settingsInput} style={{ width: '200px', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }}>
                                 <option value="ALL" style={{ color: 'black' }}>전체 타겟 통합보기</option>
-                                {targets.map(t => <option key={t.id} value={t.id.toString()} style={{ color: 'black' }}>{t.siteName}</option>)}
+                                {[...targets].sort((a, b) => a.siteName.localeCompare(b.siteName, 'ko-KR')).map(t => <option key={t.id} value={t.id.toString()} style={{ color: 'black' }}>{t.siteName}</option>)}
+                            </select>
+                            <select value={filterKeyword} onChange={e => setFilterKeyword(e.target.value)} className={styles.settingsInput} style={{ width: '200px', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }}>
+                                <option value="ALL" style={{ color: 'black' }}>모든 키워드 보기</option>
+                                {keywords.length > 0 && Array.from(new Set(keywords.map(k => k.keyword))).map((k: any, i) => (
+                                    <option key={i} value={k} style={{ color: 'black' }}>{k.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}</option>
+                                ))}
                             </select>
                         </section>
 
@@ -290,9 +328,6 @@ export default function CommunityDashboard() {
                                         <div className={styles.cardContent}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.8rem' }}>
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                    <User size={14} /> 작성자: {post.author}
-                                                </span>
-                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                     <Calendar size={14} /> 게시일: {new Date(post.publishedAt).toLocaleDateString()}
                                                 </span>
                                             </div>
@@ -302,10 +337,10 @@ export default function CommunityDashboard() {
                                                     background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', padding: '1rem', marginTop: '1rem', border: '1px solid rgba(16, 185, 129, 0.1)'
                                                 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.8rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, minWidth: 0 }}>
                                                             <Sparkles size={16} color="#10b981" style={{ flexShrink: 0 }} />
-                                                            <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, lineHeight: '1.4' }}>
-                                                                AI 심층 분석 리포트 (리스크 {post.aiRiskLevel})
+                                                            <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, lineHeight: '1.4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                AI 분석 리포트 (리스크 {post.aiRiskLevel})
                                                             </span>
                                                         </div>
                                                         <button
@@ -390,7 +425,7 @@ export default function CommunityDashboard() {
                             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', minWidth: 0 }}>
                                 <input
                                     type="text"
-                                    placeholder="사이트 명칭 (예: 네이버 블로그)"
+                                    placeholder="사이트 명칭 (자동 추출 - 빈칸 가능)"
                                     value={newSiteName}
                                     onChange={(e) => setNewSiteName(e.target.value)}
                                     className={styles.settingsInput}
@@ -408,7 +443,7 @@ export default function CommunityDashboard() {
                             </div>
 
                             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {targets.map(t => (
+                                {[...targets].sort((a, b) => a.siteName.localeCompare(b.siteName, 'ko-KR')).map(t => (
                                     <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', minWidth: 0 }}>
                                         <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
                                             <strong style={{ color: '#10b981' }}>{t.siteName}</strong>

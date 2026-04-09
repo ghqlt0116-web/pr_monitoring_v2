@@ -7,18 +7,30 @@ export function analyzeWithKeywords(title: string, text: string, highKeywords: s
     let matchedKeywords: string[] = [];
 
     for (const kw of highKeywords) {
-        const subKws = kw.split('+');
-        const allMatch = subKws.every(sub => spacelessContent.includes(sub.toLowerCase().replace(/\s+/g, '')));
-        if (allMatch) matchedKeywords.push(kw);
+        const parts = kw.split('-');
+        const reqParts = parts[0].split('+');
+        const exclParts = parts.slice(1);
+
+        const allMatch = reqParts.every(sub => spacelessContent.includes(sub.toLowerCase().replace(/\s+/g, '')));
+        if (allMatch) {
+            const hasExclude = exclParts.some(ex => ex.length > 0 && spacelessContent.includes(ex.toLowerCase().replace(/\s+/g, '')));
+            if (!hasExclude) matchedKeywords.push(kw);
+        }
     }
     if (matchedKeywords.length > 0) {
-        return { category: '통신/IT 핵심', riskLevel: '상', summary: `주요 키워드 감지: ${matchedKeywords.join(', ')}` };
+        return { category: '통신/IT 핵심', riskLevel: '상', summary: `주요 키워드 감지: ${matchedKeywords.join(', ').replace(/\+/g, ' ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}` };
     }
 
     for (const kw of midKeywords) {
-        const subKws = kw.split('+');
-        const allMatch = subKws.every(sub => spacelessContent.includes(sub.toLowerCase().replace(/\s+/g, '')));
-        if (allMatch) matchedKeywords.push(kw);
+        const parts = kw.split('-');
+        const reqParts = parts[0].split('+');
+        const exclParts = parts.slice(1);
+
+        const allMatch = reqParts.every(sub => spacelessContent.includes(sub.toLowerCase().replace(/\s+/g, '')));
+        if (allMatch) {
+            const hasExclude = exclParts.some(ex => ex.length > 0 && spacelessContent.includes(ex.toLowerCase().replace(/\s+/g, '')));
+            if (!hasExclude) matchedKeywords.push(kw);
+        }
     }
     if (matchedKeywords.length > 0) {
         return { category: '미디어/플랫폼', riskLevel: '중', summary: `관련 키워드 감지: ${matchedKeywords.join(', ')}` };
@@ -28,9 +40,9 @@ export function analyzeWithKeywords(title: string, text: string, highKeywords: s
 }
 
 export async function reevaluateAllEpisodes() {
-    const dbKeywords = await prisma.programKeyword.findMany({ where: { isActive: true } });
-    let highKeywords = dbKeywords.filter(k => k.level === 'HIGH').map(k => k.keyword);
-    let midKeywords = dbKeywords.filter(k => k.level === 'MID').map(k => k.keyword);
+    const dbKeywords = await (prisma as any).programKeyword.findMany({ where: { isActive: true } });
+    let highKeywords = dbKeywords.filter((k: any) => k.level === 'HIGH').map((k: any) => k.keyword);
+    let midKeywords = dbKeywords.filter((k: any) => k.level === 'MID').map((k: any) => k.keyword);
 
     if (highKeywords.length === 0 && midKeywords.length === 0) {
         highKeywords = ['통신', '망사용료', 'sk', '브로드밴드', '에스케이', '파업', '노조', '방통위', "과기부", "망이용대가", "갑질", "개인정보 유출"];

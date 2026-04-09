@@ -20,6 +20,7 @@ export default function CreatorsDashboard() {
     const [newChannelTier, setNewChannelTier] = useState<number>(3);
     const [newKeyword, setNewKeyword] = useState('');
     const [newSubKeyword, setNewSubKeyword] = useState('');
+    const [newExcludeKeyword, setNewExcludeKeyword] = useState('');
 
     const [filterChannel, setFilterChannel] = useState<string>('ALL');
     const [filterKeyword, setFilterKeyword] = useState<string>('ALL');
@@ -74,11 +75,20 @@ export default function CreatorsDashboard() {
         let result = videos;
         if (filterChannel !== 'ALL') result = result.filter(v => v.channelId === filterChannel);
         if (filterKeyword !== 'ALL') {
-            const kw = filterKeyword.toLowerCase().replace(/\s+/g, '');
-            const subKws = kw.split('+');
+            const kwStr = filterKeyword.toLowerCase().replace(/\s+/g, '');
+            const parts = kwStr.split('-');
+            const reqParts = parts[0].split('+');
+            const exclParts = parts.slice(1);
+
             result = result.filter(v => {
                 const txt = (v.title + ' ' + (v.description || '')).toLowerCase().replace(/\s+/g, '');
-                return subKws.every(sub => txt.includes(sub));
+                const hasAllReq = reqParts.every(req => txt.includes(req));
+                if (!hasAllReq) return false;
+                if (exclParts.length > 0) {
+                    const hasExcluded = exclParts.some(ex => ex.length > 0 && txt.includes(ex));
+                    if (hasExcluded) return false;
+                }
+                return true;
             });
         }
 
@@ -86,8 +96,15 @@ export default function CreatorsDashboard() {
         return result.map(vid => {
             const spacelessText = (vid.title + ' ' + (vid.description || '')).toLowerCase().replace(/\s+/g, '');
             const matched = keywords.filter(k => k.isActive).map(k => k.keyword).filter(k => {
-                const subKws = k.split('+');
-                return subKws.every((sub: string) => spacelessText.includes(sub.toLowerCase().replace(/\s+/g, '')));
+                const parts = k.split('-');
+                const reqParts = parts[0].split('+');
+                const exclParts = parts.slice(1);
+                const hasAllReq = reqParts.every((req: string) => spacelessText.includes(req.toLowerCase().replace(/\s+/g, '')));
+                if (!hasAllReq) return false;
+                if (exclParts.length > 0) {
+                    return !exclParts.some((ex: string) => ex.length > 0 && spacelessText.includes(ex.toLowerCase().replace(/\s+/g, '')));
+                }
+                return true;
             });
             return { ...vid, matchedKws: matched };
         });
@@ -183,7 +200,10 @@ export default function CreatorsDashboard() {
         if (!main) return;
 
         const subs = newSubKeyword.split(',').map(s => s.trim()).filter(s => s);
-        let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}`) : [main];
+        const excludes = newExcludeKeyword.split(',').map(s => s.trim()).filter(s => s);
+
+        const excludeStr = excludes.length > 0 ? '-' + excludes.join('-') : '';
+        let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}${excludeStr}`) : [`${main}${excludeStr}`];
 
         let hasError = false;
         for (const word of newItems) {
@@ -204,6 +224,7 @@ export default function CreatorsDashboard() {
         } else {
             setNewKeyword('');
             setNewSubKeyword('');
+            setNewExcludeKeyword('');
             fetchData();
         }
     };
@@ -335,9 +356,9 @@ export default function CreatorsDashboard() {
                                 className={styles.settingsInput}
                                 style={{ padding: '0.8rem 1rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', flex: 1, outline: 'none' }}
                             >
-                                <option value="ALL" style={{ color: 'black' }}>🔑 [전체 뷰] 모든 키워드 영상 보기</option>
-                                {[...keywords].filter(k => k.isActive).sort((a, b) => a.keyword.localeCompare(b.keyword, 'ko-KR')).map(kw => (
-                                    <option key={kw.keyword} value={kw.keyword} style={{ color: 'black' }}>{kw.keyword}</option>
+                                <option value="ALL" style={{ color: 'black' }}>모든 키워드 보기</option>
+                                {keywords.length > 0 && Array.from(new Set(keywords.map(k => k.keyword))).map((k: any, i) => (
+                                    <option key={i} value={k} style={{ color: 'black' }}>{k.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}</option>
                                 ))}
                             </select>
                         </div>
@@ -381,10 +402,10 @@ export default function CreatorsDashboard() {
                                             {vid.aiSummary ? (
                                                 <div className={styles.aiSummaryBox} style={{ borderColor: getRiskColor(vid.aiRiskLevel || ''), background: 'rgba(0,0,0,0.3)' }}>
                                                     <div className={styles.aiHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.8rem' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, minWidth: 0 }}>
                                                             <Sparkles size={16} color={getRiskColor(vid.aiRiskLevel || '')} style={{ flexShrink: 0 }} />
-                                                            <span style={{ color: getRiskColor(vid.aiRiskLevel || ''), fontSize: '0.85rem', fontWeight: 600, lineHeight: '1.4' }}>
-                                                                AI 심층 분석 리포트 (리스크 {vid.aiRiskLevel})
+                                                            <span style={{ color: getRiskColor(vid.aiRiskLevel || ''), fontSize: '0.85rem', fontWeight: 600, lineHeight: '1.4', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                                AI 분석 리포트 (리스크 {vid.aiRiskLevel})
                                                             </span>
                                                         </div>
                                                         <button
@@ -531,7 +552,11 @@ export default function CreatorsDashboard() {
                                         </div>
                                         <div style={{ flex: 2 }}>
                                             <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
-                                            <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 분쟁, 통신사" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                            <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} placeholder="예: 분쟁, 트래픽" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                        </div>
+                                        <div style={{ flex: 2 }}>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#ef4444', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
+                                            <input type="text" value={newExcludeKeyword} onChange={e => setNewExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 법안, 합의" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                                             <button onClick={addKeyword} className={styles.editBtn} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>

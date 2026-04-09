@@ -16,9 +16,11 @@ export default function Dashboard() {
   const [highKeywords, setHighKeywords] = useState<string[]>([]);
   const [newHighKeyword, setNewHighKeyword] = useState('');
   const [newHighSubKeyword, setNewHighSubKeyword] = useState('');
+  const [newHighExcludeKeyword, setNewHighExcludeKeyword] = useState('');
   const [midKeywords, setMidKeywords] = useState<string[]>([]);
   const [newMidKeyword, setNewMidKeyword] = useState('');
   const [newMidSubKeyword, setNewMidSubKeyword] = useState('');
+  const [newMidExcludeKeyword, setNewMidExcludeKeyword] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
 
   const handleAddHigh = () => {
@@ -26,7 +28,10 @@ export default function Dashboard() {
     if (!main) return;
 
     const subs = newHighSubKeyword.split(',').map(s => s.trim()).filter(s => s);
-    let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}`) : [main];
+    const excludes = newHighExcludeKeyword.split(',').map(s => s.trim()).filter(s => s);
+    const excludeStr = excludes.length > 0 ? '-' + excludes.join('-') : '';
+
+    let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}${excludeStr}`) : [`${main}${excludeStr}`];
     newItems = newItems.filter(item => !highKeywords.includes(item));
 
     if (newItems.length > 0) {
@@ -34,6 +39,7 @@ export default function Dashboard() {
       setHighKeywords(newList);
       setNewHighKeyword('');
       setNewHighSubKeyword('');
+      setNewHighExcludeKeyword('');
       autoSaveSettings(newList, midKeywords);
     }
   };
@@ -48,7 +54,10 @@ export default function Dashboard() {
     if (!main) return;
 
     const subs = newMidSubKeyword.split(',').map(s => s.trim()).filter(s => s);
-    let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}`) : [main];
+    const excludes = newMidExcludeKeyword.split(',').map(s => s.trim()).filter(s => s);
+    const excludeStr = excludes.length > 0 ? '-' + excludes.join('-') : '';
+
+    let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}${excludeStr}`) : [`${main}${excludeStr}`];
     newItems = newItems.filter(item => !midKeywords.includes(item));
 
     if (newItems.length > 0) {
@@ -56,6 +65,7 @@ export default function Dashboard() {
       setMidKeywords(newList);
       setNewMidKeyword('');
       setNewMidSubKeyword('');
+      setNewMidExcludeKeyword('');
       autoSaveSettings(highKeywords, newList);
     }
   };
@@ -400,6 +410,10 @@ export default function Dashboard() {
                       <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
                       <input type="text" value={newHighSubKeyword} onChange={e => setNewHighSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddHigh()} placeholder="예: SK, 브로드밴드, 통신사" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                     </div>
+                    <div style={{ flex: 2 }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#fca5a5', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
+                      <input type="text" value={newHighExcludeKeyword} onChange={e => setNewHighExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddHigh()} placeholder="예: 시위, 임단협" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                       <button onClick={handleAddHigh} className={styles.editBtn} disabled={!newHighKeyword.trim()} style={{ background: 'var(--accent-brand)', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
                     </div>
@@ -408,7 +422,7 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2.5rem' }}>
                   {highKeywords.map(kw => (
                     <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-                      {kw.replace(/\+/g, ' ➕ ')}
+                      {kw.replace(/\+/g, ' ➕ ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
                       <button onClick={() => handleRemoveHigh(kw)} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}><X size={14} /></button>
                     </div>
                   ))}
@@ -426,6 +440,10 @@ export default function Dashboard() {
                       <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
                       <input type="text" value={newMidSubKeyword} onChange={e => setNewMidSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddMid()} placeholder="예: 고객정보, 유출" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                     </div>
+                    <div style={{ flex: 2 }}>
+                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#fde047', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
+                      <input type="text" value={newMidExcludeKeyword} onChange={e => setNewMidExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddMid()} placeholder="예: 무관, 광고" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                    </div>
                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                       <button onClick={handleAddMid} className={styles.editBtn} disabled={!newMidKeyword.trim()} style={{ background: 'var(--risk-mid)', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
                     </div>
@@ -434,7 +452,7 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {midKeywords.map(kw => (
                     <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(250, 204, 21, 0.15)', color: '#fde047', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500, border: '1px solid rgba(250, 204, 21, 0.3)' }}>
-                      {kw.replace(/\+/g, ' ➕ ')}
+                      {kw.replace(/\+/g, ' ➕ ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
                       <button onClick={() => handleRemoveMid(kw)} style={{ background: 'none', border: 'none', color: '#fde047', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}><X size={14} /></button>
                     </div>
                   ))}

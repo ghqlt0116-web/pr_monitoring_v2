@@ -15,8 +15,25 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const { siteName, url } = await req.json();
-        if (!siteName || !url) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+        let { siteName, url } = await req.json();
+        if (!url) return NextResponse.json({ error: "Missing URL" }, { status: 400 });
+
+        if (!siteName || siteName.trim() === '') {
+            try {
+                const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                if (res.ok) {
+                    const html = await res.text();
+                    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+                    siteName = titleMatch ? titleMatch[1].trim() : '수집 대상';
+                    // 네이버 블로그 등 특수문자 클리닝
+                    siteName = siteName.replace(/ : 네이버 블로그$/, '').replace(/ : 네이버 포스트$/, '');
+                } else {
+                    siteName = '수집 대상';
+                }
+            } catch (e) {
+                siteName = '수집 대상';
+            }
+        }
 
         const target = await (prisma as any).communityTarget.create({
             data: { siteName, url }
