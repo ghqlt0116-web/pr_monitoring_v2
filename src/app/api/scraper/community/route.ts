@@ -123,8 +123,6 @@ export async function POST() {
                 processed.push({ target: target.siteName, newPosts: newCount });
 
                 // Vercel 차단 지연 (Timeout 안전 수치 0.3초)
-                await new Promise(resolve => setTimeout(resolve, 300));
-
             } catch (err: any) {
                 console.error(`Error processing target ${target.url}:`, err);
                 await (prisma as any).communityTarget.update({
@@ -132,9 +130,12 @@ export async function POST() {
                     data: { lastScrapedAt: new Date(), lastScrapeStatus: 'ERROR', lastScrapeError: err.message || 'Unknown error' }
                 });
             }
+
+            // [IP 차단 방지] 각 블로그/커뮤니티 타겟을 긁은 후, 무조건 1.5초(1500ms) 대기하여 호스트 서버 과부하 및 Vercel Timeout 방어
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
 
-        return NextResponse.json({ success: true, processed });
+        return NextResponse.json({ success: true, processed: processed.length });
 
     } catch (error: any) {
         console.error('Community Scraper API Error:', error);

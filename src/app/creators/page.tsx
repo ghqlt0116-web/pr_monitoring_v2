@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { RefreshCw, Youtube, Settings, ArrowLeft, ShieldAlert, MonitorPlay, Activity, Clock, Trash2, Save, Plus, Globe, LayoutDashboard, Download } from 'lucide-react';
+import { RefreshCw, Youtube, Settings, ArrowLeft, ShieldAlert, MonitorPlay, Activity, Clock, Trash2, Save, Plus, Globe, LayoutDashboard, Download, Sparkles } from 'lucide-react';
 import styles from '../page.module.css';
 
 export default function CreatorsDashboard() {
@@ -380,12 +380,13 @@ export default function CreatorsDashboard() {
                                             {/* Track B Analysis Result Box */}
                                             {vid.aiSummary ? (
                                                 <div className={styles.aiSummaryBox} style={{ borderColor: getRiskColor(vid.aiRiskLevel || ''), background: 'rgba(0,0,0,0.3)' }}>
-                                                    <div className={styles.aiHeader} style={{ position: 'relative' }}>
+                                                    <div className={styles.aiHeader} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                        <Sparkles size={16} color={getRiskColor(vid.aiRiskLevel || '')} />
                                                         <span style={{ color: getRiskColor(vid.aiRiskLevel || '') }}>AI 심층 분석 리포트 (리스크 {vid.aiRiskLevel})</span>
                                                         <button
                                                             onClick={() => handleAnalyze(vid.videoId)}
                                                             disabled={analyzingId === vid.videoId}
-                                                            style={{ position: 'absolute', right: 0, top: 0, background: 'transparent', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', color: '#10b981', cursor: 'pointer', fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}
+                                                            style={{ position: 'absolute', right: 0, top: 0, background: 'transparent', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', color: '#10b981', cursor: 'pointer', fontSize: '0.8rem', padding: '0.2rem 0.5rem', whiteSpace: 'nowrap' }}
                                                             title="최신 댓글 기준으로 AI 보고서를 처음부터 새롭게 다시 작성합니다"
                                                         >
                                                             {analyzingId === vid.videoId ? '분석 중...' : '🔄 AI 재분석'}
@@ -414,7 +415,7 @@ export default function CreatorsDashboard() {
                                                                 else newSet.add(vid.videoId);
                                                                 setExpandedSummaryIds(newSet);
                                                             }}
-                                                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem 0.7rem', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }}
+                                                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem 0.7rem', color: 'white', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', minWidth: 'fit-content' }}
                                                         >
                                                             {expandedSummaryIds.has(vid.videoId) ? '▲ 닫기' : '▼ 전체 내용 보기'}
                                                         </button>

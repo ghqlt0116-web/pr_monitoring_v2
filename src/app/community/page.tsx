@@ -12,6 +12,7 @@ export default function CommunityDashboard() {
     const [loading, setLoading] = useState(true);
     const [scraping, setScraping] = useState(false);
     const [analyzingId, setAnalyzingId] = useState<number | null>(null);
+    const [expandedSummaryIds, setExpandedSummaryIds] = useState<Set<number>>(new Set());
 
     const [newSiteName, setNewSiteName] = useState('');
     const [newTargetUrl, setNewTargetUrl] = useState('');
@@ -56,7 +57,6 @@ export default function CommunityDashboard() {
 
     useEffect(() => {
         fetchData();
-        handleScrape(true);
     }, [currentView]);
 
     const addTarget = async () => {
@@ -301,10 +301,46 @@ export default function CommunityDashboard() {
                                                 <div style={{
                                                     background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', padding: '1rem', marginTop: '1rem', border: '1px solid rgba(16, 185, 129, 0.1)'
                                                 }}>
-                                                    <p style={{ fontSize: '0.85rem', color: '#10b981', marginBottom: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                        <Sparkles size={16} /> AI 경영진 요약 리포트 (Risk: {post.aiRiskLevel})
-                                                    </p>
-                                                    <p className={styles.aiText} style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '0.95rem' }}>{post.aiSummary}</p>
+                                                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem' }}>
+                                                        <Sparkles size={16} color="#10b981" />
+                                                        <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600 }}>AI 심층 분석 리포트 (리스크 {post.aiRiskLevel})</span>
+                                                        <button
+                                                            onClick={() => handleAnalyze(post.id)}
+                                                            disabled={analyzingId === post.id}
+                                                            style={{ position: 'absolute', right: 0, top: 0, background: 'transparent', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', color: '#10b981', cursor: 'pointer', fontSize: '0.8rem', padding: '0.2rem 0.5rem', whiteSpace: 'nowrap' }}
+                                                            title="최신 데이터를 기준으로 AI 보고서를 처음부터 새롭게 다시 작성합니다"
+                                                        >
+                                                            {analyzingId === post.id ? '분석 중...' : '🔄 AI 재분석'}
+                                                        </button>
+                                                    </div>
+
+                                                    <div style={{ position: 'relative' }}>
+                                                        <div style={{
+                                                            maxHeight: expandedSummaryIds.has(post.id) ? 'none' : '100px',
+                                                            overflow: 'hidden',
+                                                            position: 'relative'
+                                                        }}>
+                                                            <p className={styles.aiText} style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '0.95rem', margin: 0 }}>{post.aiSummary}</p>
+                                                        </div>
+                                                        {!expandedSummaryIds.has(post.id) && (
+                                                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40px', background: 'linear-gradient(transparent, #171717)', pointerEvents: 'none' }} />
+                                                        )}
+                                                    </div>
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
+                                                        <small style={{ color: 'var(--text-muted)' }}>분석일시: {post.aiAnalyzedAt ? new Date(post.aiAnalyzedAt).toLocaleString() : '기록 없음'}</small>
+                                                        <button
+                                                            onClick={() => {
+                                                                const newSet = new Set(expandedSummaryIds);
+                                                                if (newSet.has(post.id)) newSet.delete(post.id);
+                                                                else newSet.add(post.id);
+                                                                setExpandedSummaryIds(newSet);
+                                                            }}
+                                                            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.3rem 0.7rem', color: 'white', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', minWidth: 'fit-content' }}
+                                                        >
+                                                            {expandedSummaryIds.has(post.id) ? '▲ 닫기' : '▼ 전체 내용 보기'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <>
