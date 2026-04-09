@@ -62,7 +62,7 @@ export default function CommunityDashboard() {
     }, [currentView]);
 
     const addTarget = async () => {
-        if (!newSiteName || !newTargetUrl) return;
+        if (!newTargetUrl) return;
         await fetch('/api/community/targets', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -320,20 +320,22 @@ export default function CommunityDashboard() {
                                                     boxShadow: `0 0 10px ${post.aiRiskLevel === '상' ? 'var(--risk-high)' : post.aiRiskLevel === '중' ? 'var(--risk-mid)' : post.aiRiskLevel === '하' ? 'var(--risk-low)' : 'transparent'}`
                                                 }} />
                                                 <span className={styles.channelLabel} style={{ background: '#10b981', color: 'black' }}>{post.target?.siteName || '커뮤니티'}</span>
-                                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', flex: 1 }}>
-                                                    {post.matchedKws && post.matchedKws.length > 0 ? (
-                                                        post.matchedKws.map((kw: string) => (
-                                                            <span key={kw} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                                                                🟢 {kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
-                                                            </span>
-                                                        ))
-                                                    ) : (
-                                                        <span style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                            기본 수집 타겟
-                                                        </span>
-                                                    )}
-                                                </div>
                                             </div>
+
+                                            {(!post.matchedKws || post.matchedKws.length === 0) && (
+                                                <span style={{ display: 'inline-block', borderColor: 'var(--text-muted)', color: 'var(--text-muted)', whiteSpace: 'nowrap', padding: '0.2rem 0.5rem', border: '1px solid var(--text-muted)', borderRadius: '4px', fontSize: '0.75rem', marginBottom: '1rem' }}>
+                                                    ⚪ 키워드 미감지
+                                                </span>
+                                            )}
+
+                                            {post.matchedKws && post.matchedKws.length > 0 && (
+                                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', flex: 1, marginBottom: '1rem' }}>
+                                                    <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                        🔑 키워드: {post.matchedKws.map((kw: string) => kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')).join(' | ')}
+                                                    </span>
+                                                </div>
+                                            )}
+
                                             <h3 className={styles.programTitle} style={{ fontSize: '1.1rem', width: '100%' }}>{post.title}</h3>
                                         </div>
 

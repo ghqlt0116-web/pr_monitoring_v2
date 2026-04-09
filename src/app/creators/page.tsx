@@ -379,7 +379,7 @@ export default function CreatorsDashboard() {
                                                     backgroundColor: vid.aiRiskLevel === '상' ? 'var(--risk-high)' : vid.aiRiskLevel === '중' ? 'var(--risk-mid)' : vid.aiRiskLevel === '하' ? 'var(--risk-low)' : '#6b7280',
                                                     boxShadow: `0 0 10px ${vid.aiRiskLevel === '상' ? 'var(--risk-high)' : vid.aiRiskLevel === '중' ? 'var(--risk-mid)' : vid.aiRiskLevel === '하' ? 'var(--risk-low)' : 'transparent'}`
                                                 }} />
-                                                <span className={styles.channelLabel} style={{ wordBreak: 'keep-all' }}>{vid.channelTitle}</span>
+                                                <span className={styles.channelLabel} style={{ wordBreak: 'keep-all' }}>[Tier {vid.channel?.tier || 3}] {vid.channel?.title || 'Unknown'}</span>
                                             </div>
 
                                             {(vid as any).matchedKws.length === 0 && (
@@ -391,11 +391,9 @@ export default function CreatorsDashboard() {
 
                                         {(vid as any).matchedKws.length > 0 && (
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
-                                                {(vid as any).matchedKws.map((kw: string) => (
-                                                    <span key={kw} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                                                        🟢 {kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
-                                                    </span>
-                                                ))}
+                                                <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                    🔑 키워드: {(vid as any).matchedKws.map((kw: string) => kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')).join(' | ')}
+                                                </span>
                                             </div>
                                         )}
 
