@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { RefreshCw, Youtube, Settings, ArrowLeft, ShieldAlert, MonitorPlay, Activity, Clock, Trash2, Save, Plus, Globe, LayoutDashboard, Download } from 'lucide-react';
 import styles from '../page.module.css';
@@ -69,32 +69,38 @@ export default function CreatorsDashboard() {
         // 사용자가 명시적으로 '데이터 갱신' 버튼을 누를 때만 동작하도록 변경
     }, [currentView]);
 
-    const filteredVideos = videos.filter(vid => {
-        if (filterChannel !== 'ALL' && vid.channelId !== filterChannel) return false;
-
+    // Filter videos and pre-calculate keyword matching via useMemo to prevent severe UI render lag
+    const processedVideos = useMemo(() => {
+        let result = videos;
+        if (filterChannel !== 'ALL') result = result.filter(v => v.channelId === filterChannel);
         if (filterKeyword !== 'ALL') {
-            const spacelessVidTitle = vid.title?.toLowerCase().replace(/\s+/g, '') || '';
-            const spacelessVidDesc = vid.description?.toLowerCase().replace(/\s+/g, '') || '';
-            const spacelessSummary = vid.aiSummary?.toLowerCase().replace(/\s+/g, '') || '';
-            const spacelessKeyword = filterKeyword.toLowerCase().replace(/\s+/g, '');
-
-            if (!spacelessVidTitle.includes(spacelessKeyword) &&
-                !spacelessVidDesc.includes(spacelessKeyword) &&
-                !spacelessSummary.includes(spacelessKeyword)) {
-                return false;
-            }
+            const kw = filterKeyword.toLowerCase().replace(/\s+/g, '');
+            const subKws = kw.split('+');
+            result = result.filter(v => {
+                const txt = (v.title + ' ' + (v.description || '')).toLowerCase().replace(/\s+/g, '');
+                return subKws.every(sub => txt.includes(sub));
+            });
         }
-        return true;
-    });
+
+        // Pre-calculate strict keyword matches to offload the DOM render cycle
+        return result.map(vid => {
+            const spacelessText = (vid.title + ' ' + (vid.description || '')).toLowerCase().replace(/\s+/g, '');
+            const matched = keywords.filter(k => k.isActive).map(k => k.keyword).filter(k => {
+                const subKws = k.split('+');
+                return subKws.every((sub: string) => spacelessText.includes(sub.toLowerCase().replace(/\s+/g, '')));
+            });
+            return { ...vid, matchedKws: matched };
+        });
+    }, [videos, filterChannel, filterKeyword, keywords]);
 
     const handleExportExcel = () => {
-        if (!filteredVideos || filteredVideos.length === 0) {
+        if (!processedVideos || processedVideos.length === 0) {
             alert("다운로드할 데이터가 없습니다.");
             return;
         }
 
         const headers = ['영상 제목', '업로드 일시', 'AI 리스크 등급', 'AI 심층 리뷰 요약', '영상 링크'];
-        const rows = filteredVideos.map(vid => {
+        const rows = processedVideos.map(vid => {
             const riskLevel = vid.aiRiskLevel || '분석 전';
             const summary = vid.aiSummary || '분석 전';
 
@@ -291,7 +297,7 @@ export default function CreatorsDashboard() {
                         <button
                             className={styles.scrapeBtn}
                             onClick={handleExportExcel}
-                            disabled={filteredVideos.length === 0}
+                            disabled={processedVideos.length === 0}
                             style={{ background: '#10b981', color: 'white', whiteSpace: 'nowrap' }}
                             title="분석된 데이터를 CSV 엑셀 파일로 다운로드합니다"
                         >
@@ -343,25 +349,17 @@ export default function CreatorsDashboard() {
                             </div>
                         ) : (
                             <div className={styles.grid}>
-                                {filteredVideos.map((vid, idx) => (
+                                {processedVideos.map((vid, idx) => (
                                     <article key={vid.id} className={`glass-panel animate-fade-in ${styles.card}`} style={{ animationDelay: `${0.1 * (idx % 5)}s` }}>
                                         <div className={styles.cardHeader} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span className={styles.channelLabel} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' }}>
                                                 [Tier {vid.channel?.tier || 3}] {vid.channel?.title || 'Unknown'}
                                             </span>
-                                            {vid.isAiRecommended && (() => {
-                                                // 프론트엔드에서 실시간으로 어떤 키워드가 감지되었는지 찾기
-                                                const spacelessText = (vid.title + ' ' + (vid.description || '')).toLowerCase().replace(/\s+/g, '');
-                                                const matched = keywords.filter(k => k.isActive).map(k => k.keyword).filter(k => {
-                                                    const subKws = k.split('+');
-                                                    return subKws.every((sub: string) => spacelessText.includes(sub.toLowerCase().replace(/\s+/g, '')));
-                                                });
-                                                return (
-                                                    <span className={styles.riskBadge} style={{ borderColor: '#10b981', color: '#10b981', whiteSpace: 'nowrap' }}>
-                                                        🟢 키워드 감지: {matched.length > 0 ? matched.join(', ') : '기본 키워드'}
-                                                    </span>
-                                                );
-                                            })()}
+                                            {vid.isAiRecommended && (
+                                                <span className={styles.riskBadge} style={{ borderColor: '#10b981', color: '#10b981', whiteSpace: 'nowrap' }}>
+                                                    🟢 키워드 감지: {(vid as any).matchedKws.length > 0 ? (vid as any).matchedKws.join(', ') : '기본 키워드'}
+                                                </span>
+                                            )}
                                             {!vid.isAiRecommended && (
                                                 <span className={styles.riskBadge} style={{ borderColor: 'var(--text-muted)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }} title="자막 미제공 또는 키워드 미감지 영상입니다. 썸네일/제목이 의심될 경우 클릭하여 강제 분석하세요">
                                                     ⚪ 키워드 미감지

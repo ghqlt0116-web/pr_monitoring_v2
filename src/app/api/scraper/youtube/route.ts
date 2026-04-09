@@ -191,7 +191,7 @@ export async function POST(req?: Request) {
                                 channelId: channel.id,
                                 videoId: video.videoId,
                                 title: video.title,
-                                description: video.description.substring(0, 4000),
+                                description: video.description.substring(0, 1500), // 토큰 낭비 방지 (광고/스펙 컷)
                                 url: video.url,
                                 thumbnail: video.thumbnail,
                                 publishedAt: video.publishedAt,
