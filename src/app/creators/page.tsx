@@ -372,21 +372,32 @@ export default function CreatorsDashboard() {
                             <div className={styles.grid}>
                                 {processedVideos.map((vid, idx) => (
                                     <article key={vid.id} className={`glass-panel animate-fade-in ${styles.card}`} style={{ animationDelay: `${0.1 * (idx % 5)}s` }}>
-                                        <div className={styles.cardHeader} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span className={styles.channelLabel} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' }}>
-                                                [Tier {vid.channel?.tier || 3}] {vid.channel?.title || 'Unknown'}
-                                            </span>
-                                            {vid.isAiRecommended && (
-                                                <span className={styles.riskBadge} style={{ borderColor: '#10b981', color: '#10b981', whiteSpace: 'nowrap' }}>
-                                                    🟢 키워드 감지: {(vid as any).matchedKws.length > 0 ? (vid as any).matchedKws.join(', ') : '기본 키워드'}
-                                                </span>
-                                            )}
-                                            {!vid.isAiRecommended && (
-                                                <span className={styles.riskBadge} style={{ borderColor: 'var(--text-muted)', color: 'var(--text-muted)', whiteSpace: 'nowrap' }} title="자막 미제공 또는 키워드 미감지 영상입니다. 썸네일/제목이 의심될 경우 클릭하여 강제 분석하세요">
+                                        <div className={styles.cardHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                <div style={{
+                                                    width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                                                    backgroundColor: vid.aiRiskLevel === '상' ? 'var(--risk-high)' : vid.aiRiskLevel === '중' ? 'var(--risk-mid)' : vid.aiRiskLevel === '하' ? 'var(--risk-low)' : '#6b7280',
+                                                    boxShadow: `0 0 10px ${vid.aiRiskLevel === '상' ? 'var(--risk-high)' : vid.aiRiskLevel === '중' ? 'var(--risk-mid)' : vid.aiRiskLevel === '하' ? 'var(--risk-low)' : 'transparent'}`
+                                                }} />
+                                                <span className={styles.channelLabel} style={{ wordBreak: 'keep-all' }}>{vid.channelTitle}</span>
+                                            </div>
+
+                                            {(vid as any).matchedKws.length === 0 && (
+                                                <span className={styles.riskBadge} style={{ borderColor: 'var(--text-muted)', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }} title="자막 미제공 또는 키워드 미감지 영상입니다. 썸네일/제목이 의심될 경우 클릭하여 강제 분석하세요">
                                                     ⚪ 키워드 미감지
                                                 </span>
                                             )}
                                         </div>
+
+                                        {(vid as any).matchedKws.length > 0 && (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+                                                {(vid as any).matchedKws.map((kw: string) => (
+                                                    <span key={kw} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                        🟢 {kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
 
                                         {vid.thumbnail && (
                                             <div className={styles.imageWrapper}>

@@ -320,7 +320,19 @@ export default function CommunityDashboard() {
                                                     boxShadow: `0 0 10px ${post.aiRiskLevel === '상' ? 'var(--risk-high)' : post.aiRiskLevel === '중' ? 'var(--risk-mid)' : post.aiRiskLevel === '하' ? 'var(--risk-low)' : 'transparent'}`
                                                 }} />
                                                 <span className={styles.channelLabel} style={{ background: '#10b981', color: 'black' }}>{post.target?.siteName || '커뮤니티'}</span>
-                                                {post.isAiRecommended && <span className={styles.isRecommendedBadge} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>🟢 키워드 감지: {post.matchedKws.length > 0 ? post.matchedKws.join(', ') : '기본 키워드'}</span>}
+                                                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', flex: 1 }}>
+                                                    {post.matchedKws && post.matchedKws.length > 0 ? (
+                                                        post.matchedKws.map((kw: string) => (
+                                                            <span key={kw} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                                                🟢 {kw.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                            기본 수집 타겟
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <h3 className={styles.programTitle} style={{ fontSize: '1.1rem', width: '100%' }}>{post.title}</h3>
                                         </div>
@@ -487,7 +499,11 @@ export default function CommunityDashboard() {
                                     </div>
                                     <div style={{ flex: 2 }}>
                                         <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
-                                        <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 분쟁, 통신사" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                        <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} placeholder="예: 분쟁, 트래픽" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                    </div>
+                                    <div style={{ flex: 2 }}>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#ef4444', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
+                                        <input type="text" value={newExcludeKeyword} onChange={e => setNewExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 무관, 광고, 지원금" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                                         <button onClick={addKeyword} className={styles.editBtn} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
