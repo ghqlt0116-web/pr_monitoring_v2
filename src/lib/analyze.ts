@@ -39,7 +39,7 @@ export async function reevaluateAllEpisodes() {
 
     const episodes = await prisma.episode.findMany();
 
-    const updatePromises = [];
+    const updatePromises: any[] = [];
 
     for (const episode of episodes) {
         const analysisResult = analyzeWithKeywords(episode.title, episode.content, highKeywords, midKeywords);

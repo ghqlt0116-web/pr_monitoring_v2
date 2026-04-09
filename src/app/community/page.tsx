@@ -6,7 +6,6 @@ import styles from '../page.module.css';
 
 export default function CommunityDashboard() {
     const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
-    const [dashboardMode, setDashboardMode] = useState<'search' | 'blogger'>('search');
     const [posts, setPosts] = useState<any[]>([]);
     const [targets, setTargets] = useState<any[]>([]);
     const [keywords, setKeywords] = useState<any[]>([]);
@@ -17,6 +16,7 @@ export default function CommunityDashboard() {
     const [newSiteName, setNewSiteName] = useState('');
     const [newTargetUrl, setNewTargetUrl] = useState('');
     const [newKeyword, setNewKeyword] = useState('');
+    const [newSubKeyword, setNewSubKeyword] = useState('');
     const [filterTarget, setFilterTarget] = useState<string>('ALL');
 
     const fetchData = async () => {
@@ -82,13 +82,25 @@ export default function CommunityDashboard() {
     };
 
     const addKeyword = async () => {
-        if (!newKeyword.trim()) return;
-        await fetch('/api/community/keywords', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyword: newKeyword.trim() })
-        });
+        const main = newKeyword.trim();
+        if (!main) return;
+
+        const subs = newSubKeyword.split(',').map(s => s.trim()).filter(s => s);
+        let newItems = subs.length > 0 ? subs.map(sub => `${main}+${sub}`) : [main];
+
+        let hasError = false;
+        for (const word of newItems) {
+            const res = await fetch('/api/community/keywords', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword: word })
+            });
+            const data = await res.json();
+            if (data.error && !data.error.includes('Unique constraint')) hasError = true;
+        }
+
         setNewKeyword('');
+        setNewSubKeyword('');
         fetchData();
     };
 
@@ -150,12 +162,18 @@ export default function CommunityDashboard() {
         document.body.removeChild(link);
     };
 
-    const filteredPosts = posts.filter(p => {
+    const processedPosts = posts.filter(p => {
         if (filterTarget !== 'ALL' && p.targetId.toString() !== filterTarget) return false;
-        const isSearch = p.target?.url?.includes('search') || p.target?.url?.includes('query') || p.target?.url?.includes('where=');
-        if (dashboardMode === 'search') return isSearch;
-        return !isSearch;
-    });
+        return true;
+    }).sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+        .map(post => {
+            const spacelessText = (post.title + ' ' + (post.content || '')).toLowerCase().replace(/\s+/g, '');
+            const matched = keywords.filter(k => k.isActive).map(k => k.keyword).filter(k => {
+                const subKws = k.split('+');
+                return subKws.every((sub: string) => spacelessText.includes(sub.toLowerCase().replace(/\s+/g, '')));
+            });
+            return { ...post, matchedKws: matched };
+        });
 
     const Sidebar = () => (
         <aside className={`glass-panel ${styles.sidebar}`}>
@@ -229,7 +247,7 @@ export default function CommunityDashboard() {
                             <button
                                 className={styles.scrapeBtn}
                                 onClick={handleExportExcel}
-                                disabled={filteredPosts.length === 0}
+                                disabled={processedPosts.length === 0}
                                 style={{ background: '#10b981', color: 'white', whiteSpace: 'nowrap' }}
                                 title="분석된 데이터를 CSV 엑셀 파일로 다운로드합니다"
                             >
@@ -241,23 +259,7 @@ export default function CommunityDashboard() {
 
                 {currentView === 'dashboard' ? (
                     <>
-                        {/* 탭 토글 */}
-                        <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '1.5rem', paddingBottom: '0.5rem' }}>
-                            <button
-                                onClick={() => setDashboardMode('search')}
-                                style={{ background: 'none', border: 'none', color: dashboardMode === 'search' ? '#10b981' : 'var(--text-muted)', fontWeight: dashboardMode === 'search' ? 'bold' : 'normal', fontSize: '1.05rem', cursor: 'pointer', padding: '0.5rem 1rem', borderBottom: dashboardMode === 'search' ? '2px solid #10b981' : 'none' }}
-                            >
-                                🔍 매시브 탐색 (포털 검색)
-                            </button>
-                            <button
-                                onClick={() => setDashboardMode('blogger')}
-                                style={{ background: 'none', border: 'none', color: dashboardMode === 'blogger' ? '#10b981' : 'var(--text-muted)', fontWeight: dashboardMode === 'blogger' ? 'bold' : 'normal', fontSize: '1.05rem', cursor: 'pointer', padding: '0.5rem 1rem', borderBottom: dashboardMode === 'blogger' ? '2px solid #10b981' : 'none' }}
-                            >
-                                👤 파워블로거 / 특정 커뮤니티
-                            </button>
-                        </div>
-
-                        <section style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <section style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
                             <select value={filterTarget} onChange={e => setFilterTarget(e.target.value)} className={styles.settingsInput} style={{ width: '200px', padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }}>
                                 <option value="ALL" style={{ color: 'black' }}>전체 타겟 통합보기</option>
                                 {targets.map(t => <option key={t.id} value={t.id.toString()} style={{ color: 'black' }}>{t.siteName}</option>)}
@@ -267,10 +269,10 @@ export default function CommunityDashboard() {
                         <div className={styles.grid}>
                             {loading ? (
                                 <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)', gridColumn: '1 / -1' }}>로딩 중...</div>
-                            ) : filteredPosts.length === 0 ? (
+                            ) : processedPosts.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)', gridColumn: '1 / -1' }}>수집된 게시글이 없습니다. '최신 데이터 갱신'을 누르세요.</div>
                             ) : (
-                                filteredPosts.map((post) => (
+                                processedPosts.map((post) => (
                                     <article key={post.id} className={`glass-panel ${styles.card} animate-fade-in`}>
                                         <div className={styles.cardHeader} style={{ flexWrap: 'wrap' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', width: '100%', marginBottom: '1rem' }}>
@@ -280,7 +282,7 @@ export default function CommunityDashboard() {
                                                     boxShadow: `0 0 10px ${post.aiRiskLevel === '상' ? 'var(--risk-high)' : post.aiRiskLevel === '중' ? 'var(--risk-mid)' : post.aiRiskLevel === '하' ? 'var(--risk-low)' : 'transparent'}`
                                                 }} />
                                                 <span className={styles.channelLabel} style={{ background: '#10b981', color: 'black' }}>{post.target?.siteName || '커뮤니티'}</span>
-                                                {post.isAiRecommended && <span className={styles.isRecommendedBadge} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)' }}>주요 키워드 감지</span>}
+                                                {post.isAiRecommended && <span className={styles.isRecommendedBadge} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>🟢 키워드 감지: {post.matchedKws.length > 0 ? post.matchedKws.join(', ') : '기본 키워드'}</span>}
                                             </div>
                                             <h3 className={styles.programTitle} style={{ fontSize: '1.1rem', width: '100%' }}>{post.title}</h3>
                                         </div>
@@ -397,20 +399,14 @@ export default function CommunityDashboard() {
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <div style={{ flex: 1 }}>
                                         <label style={{ display: 'block', fontSize: '0.8rem', color: '#10b981', marginBottom: '0.3rem' }}>자동 감지 단어 (필수)</label>
-                                        <input
-                                            type="text"
-                                            value={newKeyword}
-                                            onChange={e => setNewKeyword(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && addKeyword()}
-                                            placeholder="예: 망사용료"
-                                            className={styles.settingsInput}
-                                            style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                                        />
+                                        <input type="text" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} placeholder="예: 망사용료" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                    </div>
+                                    <div style={{ flex: 2 }}>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
+                                        <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 분쟁, 통신사" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                        <button onClick={addKeyword} className={styles.editBtn} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}>
-                                            <Plus size={18} style={{ marginRight: '4px' }} />등록
-                                        </button>
+                                        <button onClick={addKeyword} className={styles.editBtn} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
                                     </div>
                                 </div>
                             </div>
@@ -418,10 +414,8 @@ export default function CommunityDashboard() {
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                 {keywords.map(kw => (
                                     <div key={kw.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem' }}>
-                                        #{kw.keyword}
-                                        <button onClick={() => removeKeyword(kw.id)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', display: 'flex' }}>
-                                            <Trash2 size={14} />
-                                        </button>
+                                        {kw.keyword.replace(/\+/g, ' ➕ ')}
+                                        <button onClick={() => removeKeyword(kw.id)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', display: 'flex' }}><Trash2 size={14} /></button>
                                     </div>
                                 ))}
                             </div>
