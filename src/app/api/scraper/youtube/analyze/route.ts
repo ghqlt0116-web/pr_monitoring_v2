@@ -70,16 +70,25 @@ ${sampledComments.length > 0 ? sampledComments : "댓글 없음"}
   "isRelated": true 또는 false (간접적 영향이라도 있으면 true)
 }`;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: 'application/json',
-                temperature: 0.2, // 일관성 있는 리포트 출력을 위해 낮춤
+        let resultText = '';
+        try {
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    responseMimeType: 'application/json',
+                    temperature: 0.2, // 일관성 있는 리포트 출력을 위해 낮춤
+                }
+            });
+            resultText = response.text || '';
+        } catch (apiError: any) {
+            console.error("Gemini API Error:", apiError);
+            if (apiError.status === 503 || JSON.stringify(apiError).includes('503') || JSON.stringify(apiError).includes('high demand')) {
+                return NextResponse.json({ error: '구글 AI 서버 접속량 폭주로 일시 지연(503) 중입니다. 1~2분 뒤 다시 시도해주세요.' }, { status: 503 });
             }
-        });
+            throw apiError;
+        }
 
-        const resultText = response.text;
         if (!resultText) throw new Error("Empty AI response");
 
         const parsed = JSON.parse(resultText);

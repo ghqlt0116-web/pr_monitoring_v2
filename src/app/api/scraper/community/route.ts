@@ -48,12 +48,12 @@ export async function POST() {
                     const itemXml = itemsMatch[i];
 
                     const titleMatch = itemXml.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || itemXml.match(/<title>(.*?)<\/title>/);
-                    const linkMatch = itemXml.match(/<link>(.*?)<\/link>/);
+                    const linkMatch = itemXml.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/) || itemXml.match(/<link>(.*?)<\/link>/);
                     let descMatch = itemXml.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) || itemXml.match(/<description>([\s\S]*?)<\/description>/);
                     const pubDateMatch = itemXml.match(/<pubDate>(.*?)<\/pubDate>/);
 
                     let title = titleMatch ? titleMatch[1].trim() : '이름 없는 글';
-                    const link = linkMatch ? linkMatch[1].trim() : '#';
+                    let link = linkMatch ? linkMatch[1].replace(/&amp;/g, '&').trim() : '#';
                     let descObj = descMatch ? descMatch[1].replace(/<[^>]*>?/gm, '').trim() : title; // HTML 태그 찌꺼기 완벽 제거
 
                     let pubDateStr = new Date().toISOString();

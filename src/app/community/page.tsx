@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { RefreshCw, MonitorPlay, Youtube, Globe, Settings, LayoutDashboard, Plus, Trash2, ArrowLeft, Download, ShieldAlert, Activity, Clock } from 'lucide-react';
+import { RefreshCw, MonitorPlay, Youtube, Globe, Settings, LayoutDashboard, Plus, Trash2, ArrowLeft, Download, ShieldAlert, Activity, Clock, User, Calendar, FileText, ExternalLink, Sparkles } from 'lucide-react';
 import styles from '../page.module.css';
 
 export default function CommunityDashboard() {
@@ -227,7 +227,7 @@ export default function CommunityDashboard() {
                     <div>
                         <h2 className={styles.pageTitle}>외부 커뮤니티 모니터링</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
-                            <p className={styles.subtitle} style={{ margin: 0 }}>주요 게시판 및 블로그 여론 및 리스크 실시간 트래킹</p>
+                            <p className={styles.subtitle} style={{ margin: 0 }}>블로그/커뮤니티 리스크 실시간 추적 대시보드</p>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                 <Clock size={14} /> 6시간 자동 업데이트 | 최근 업데이트 자동 로드됨
                             </span>
@@ -288,41 +288,50 @@ export default function CommunityDashboard() {
                                         </div>
 
                                         <div className={styles.cardContent}>
-                                            <div className={styles.metaInfo}>
-                                                <span>작성자: {post.author}</span>
-                                                <span>게시일: {new Date(post.publishedAt).toLocaleDateString()}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.8rem' }}>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <User size={14} /> 작성자: {post.author}
+                                                </span>
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <Calendar size={14} /> 게시일: {new Date(post.publishedAt).toLocaleDateString()}
+                                                </span>
                                             </div>
 
                                             {post.aiSummary ? (
                                                 <div style={{
                                                     background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', padding: '1rem', marginTop: '1rem', border: '1px solid rgba(16, 185, 129, 0.1)'
                                                 }}>
-                                                    <p style={{ fontSize: '0.8rem', color: '#10b981', marginBottom: '0.5rem', fontWeight: 600 }}>✨ 경영진 리포트 (Risk: {post.aiRiskLevel})</p>
-                                                    <p className={styles.aiText} style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{post.aiSummary}</p>
+                                                    <p style={{ fontSize: '0.85rem', color: '#10b981', marginBottom: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                        <Sparkles size={16} /> AI 경영진 요약 리포트 (Risk: {post.aiRiskLevel})
+                                                    </p>
+                                                    <p className={styles.aiText} style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '0.95rem' }}>{post.aiSummary}</p>
                                                 </div>
                                             ) : (
-                                                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1rem' }}>
-                                                    <button
-                                                        onClick={() => handleAnalyze(post.id)}
-                                                        disabled={analyzingId === post.id}
-                                                        className={styles.editBtn}
-                                                        style={{ width: '100%', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid currentColor', textAlign: 'center' }}
-                                                    >
-                                                        {analyzingId === post.id ? 'AI 심층 리뷰 중...' : '심층 리뷰 (AI 분석 / 트래픽 비용발생)'}
-                                                    </button>
-                                                </div>
-                                            )}
+                                                <>
+                                                    <div style={{ paddingLeft: '1rem', borderLeft: '3px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', lineHeight: '1.6', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '1rem' }}>
+                                                        {post.content}
+                                                    </div>
 
-                                            {!post.aiSummary && (
-                                                <p style={{ marginTop: '0.8rem', fontSize: '0.85rem', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                    {post.content}
-                                                </p>
+                                                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <button
+                                                            onClick={() => handleAnalyze(post.id)}
+                                                            disabled={analyzingId === post.id}
+                                                            className={styles.editBtn}
+                                                            style={{ width: '100%', background: 'rgba(16, 185, 129, 0.05)', color: '#10b981', border: '1px solid currentColor', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.6rem' }}
+                                                        >
+                                                            <FileText size={16} /> {analyzingId === post.id ? ' AI 심층 리뷰 작성 중...' : ' AI 심층 리뷰 요청 (트래픽 비용 소모)'}
+                                                        </button>
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
 
                                         {post.url && (
-                                            <div className={styles.cardFooter} style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
-                                                <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.linkBtn} style={{ color: '#10b981' }}>외부 원문 출처 열기 ↗</a>
+                                            <div className={styles.cardFooter} style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem', paddingBottom: '0.5rem' }}>
+                                                <a href={post.url} target="_blank" rel="noopener noreferrer" className={styles.linkBtn} style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.4rem', textDecoration: 'none', transition: 'opacity 0.2s' }}>
+                                                    <ExternalLink size={16} />
+                                                    <span style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}>원본 게시글 페이지로 이동</span>
+                                                </a>
                                             </div>
                                         )}
                                     </article>
