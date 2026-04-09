@@ -380,13 +380,17 @@ export default function CreatorsDashboard() {
                                             {/* Track B Analysis Result Box */}
                                             {vid.aiSummary ? (
                                                 <div className={styles.aiSummaryBox} style={{ borderColor: getRiskColor(vid.aiRiskLevel || ''), background: 'rgba(0,0,0,0.3)' }}>
-                                                    <div className={styles.aiHeader} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                        <Sparkles size={16} color={getRiskColor(vid.aiRiskLevel || '')} />
-                                                        <span style={{ color: getRiskColor(vid.aiRiskLevel || '') }}>AI 심층 분석 리포트 (리스크 {vid.aiRiskLevel})</span>
+                                                    <div className={styles.aiHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.8rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
+                                                            <Sparkles size={16} color={getRiskColor(vid.aiRiskLevel || '')} style={{ flexShrink: 0 }} />
+                                                            <span style={{ color: getRiskColor(vid.aiRiskLevel || ''), fontSize: '0.85rem', fontWeight: 600, lineHeight: '1.4' }}>
+                                                                AI 심층 분석 리포트 (리스크 {vid.aiRiskLevel})
+                                                            </span>
+                                                        </div>
                                                         <button
                                                             onClick={() => handleAnalyze(vid.videoId)}
                                                             disabled={analyzingId === vid.videoId}
-                                                            style={{ position: 'absolute', right: 0, top: 0, background: 'transparent', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', color: '#10b981', cursor: 'pointer', fontSize: '0.8rem', padding: '0.2rem 0.5rem', whiteSpace: 'nowrap' }}
+                                                            style={{ flexShrink: 0, background: 'transparent', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', color: '#10b981', cursor: 'pointer', fontSize: '0.75rem', padding: '0.3rem 0.6rem', whiteSpace: 'nowrap' }}
                                                             title="최신 댓글 기준으로 AI 보고서를 처음부터 새롭게 다시 작성합니다"
                                                         >
                                                             {analyzingId === vid.videoId ? '분석 중...' : '🔄 AI 재분석'}
@@ -406,8 +410,8 @@ export default function CreatorsDashboard() {
                                                         )}
                                                     </div>
 
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.8rem' }}>
-                                                        <small style={{ color: 'var(--text-muted)' }}>분석일시: {new Date(vid.aiAnalyzedAt).toLocaleString()}</small>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '0.8rem', flexWrap: 'wrap', gap: '0.8rem' }}>
+                                                        <small style={{ color: 'var(--text-muted)' }}>분석일시:<br />{new Date(vid.aiAnalyzedAt).toLocaleString()}</small>
                                                         <button
                                                             onClick={() => {
                                                                 const newSet = new Set(expandedSummaryIds);

@@ -301,13 +301,17 @@ export default function CommunityDashboard() {
                                                 <div style={{
                                                     background: 'rgba(16, 185, 129, 0.05)', borderRadius: '8px', padding: '1rem', marginTop: '1rem', border: '1px solid rgba(16, 185, 129, 0.1)'
                                                 }}>
-                                                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem' }}>
-                                                        <Sparkles size={16} color="#10b981" />
-                                                        <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600 }}>AI 심층 분석 리포트 (리스크 {post.aiRiskLevel})</span>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.8rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1 }}>
+                                                            <Sparkles size={16} color="#10b981" style={{ flexShrink: 0 }} />
+                                                            <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, lineHeight: '1.4' }}>
+                                                                AI 심층 분석 리포트 (리스크 {post.aiRiskLevel})
+                                                            </span>
+                                                        </div>
                                                         <button
                                                             onClick={() => handleAnalyze(post.id)}
                                                             disabled={analyzingId === post.id}
-                                                            style={{ position: 'absolute', right: 0, top: 0, background: 'transparent', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', color: '#10b981', cursor: 'pointer', fontSize: '0.8rem', padding: '0.2rem 0.5rem', whiteSpace: 'nowrap' }}
+                                                            style={{ flexShrink: 0, background: 'transparent', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '4px', color: '#10b981', cursor: 'pointer', fontSize: '0.75rem', padding: '0.3rem 0.6rem', whiteSpace: 'nowrap' }}
                                                             title="최신 데이터를 기준으로 AI 보고서를 처음부터 새롭게 다시 작성합니다"
                                                         >
                                                             {analyzingId === post.id ? '분석 중...' : '🔄 AI 재분석'}
@@ -327,8 +331,8 @@ export default function CommunityDashboard() {
                                                         )}
                                                     </div>
 
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
-                                                        <small style={{ color: 'var(--text-muted)' }}>분석일시: {post.aiAnalyzedAt ? new Date(post.aiAnalyzedAt).toLocaleString() : '기록 없음'}</small>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                        <small style={{ color: 'var(--text-muted)' }}>분석일시:<br />{post.aiAnalyzedAt ? new Date(post.aiAnalyzedAt).toLocaleString() : '기록 없음'}</small>
                                                         <button
                                                             onClick={() => {
                                                                 const newSet = new Set(expandedSummaryIds);
