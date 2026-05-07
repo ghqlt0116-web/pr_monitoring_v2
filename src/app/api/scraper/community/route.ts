@@ -29,9 +29,15 @@ export async function POST() {
                         console.error('Influencer parsing error:', e);
                     }
                 } else if (parsedUrl.includes('blog.naver.com') && !parsedUrl.includes('rss')) {
-                    const parts = parsedUrl.split('/');
-                    const blogId = parts[parts.length - 1]?.split('?')[0];
-                    if (blogId) parsedUrl = `https://rss.blog.naver.com/${blogId}.xml`;
+                    const qsMatch = parsedUrl.match(/blogId=([a-zA-Z0-9_\-]+)/);
+                    if (qsMatch) {
+                        parsedUrl = `https://rss.blog.naver.com/${qsMatch[1]}.xml`;
+                    } else {
+                        const match = parsedUrl.match(/blog\.naver\.com\/([a-zA-Z0-9_\-]+)/);
+                        if (match) {
+                            parsedUrl = `https://rss.blog.naver.com/${match[1]}.xml`;
+                        }
+                    }
                 } else if (parsedUrl.includes('tistory.com') && !parsedUrl.endsWith('/rss')) {
                     parsedUrl = parsedUrl.replace(/\/$/, '') + '/rss';
                 }

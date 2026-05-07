@@ -67,99 +67,121 @@ export async function POST(req?: Request) {
 
         for (const channel of channels) {
             try {
-                const feedUrl = `https://www.youtube.com/channel/${channel.youtubeId}/videos`;
-                const res = await fetch(feedUrl, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
-                        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-                        'Cookie': 'SOCS=CAI' // 유튜브 쿠키/동의 화면 우회
-                    },
-                    next: { revalidate: 0 }
-                });
-
-                if (!res.ok) {
-                    console.error(`Failed to fetch HTML for ${channel.title}: ${res.status}`);
-                    await ((prisma as any).creatorChannel.update as any)({
-                        where: { id: channel.id },
-                        data: {
-                            lastScrapedAt: new Date(),
-                            lastScrapeStatus: 'ERROR',
-                            lastScrapeError: `HTTP ${res.status}`
-                        }
-                    });
-                    // 에러 시 기존 화면을 갑자기 빈 화면으로 만들지 않도록 삭제 로직(deleteMany) 제거! (회복 탄력성)
-                    continue;
-                }
-
-                const html = await res.text();
-                let validVideos: any[] = [];
-
+                // 1. First, attempt to fetch via YouTube RSS Feed (Immune to most IP blocks)
+                const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.youtubeId}`;
                 try {
-                    // ytInitialData 파싱 (글로벌 변수에서 JSON 추출)
-                    const dataStrMatch = html.match(/ytInitialData[ \n\r=]+(\{.*?\});/);
-                    if (dataStrMatch && dataStrMatch[1]) {
-                        const data = JSON.parse(dataStrMatch[1]);
-
-                        const authorName = data?.metadata?.channelMetadataRenderer?.title;
-                        if (authorName && authorName !== channel.title) {
-                            await ((prisma as any).creatorChannel.update as any)({
-                                where: { id: channel.id },
-                                data: { title: authorName }
-                            });
-                        }
-
-                        // 비디오 탭 탐색 (쇼츠 제외)
-                        const tabs = data.contents?.twoColumnBrowseResultsRenderer?.tabs || [];
-                        const videosTab = tabs.find((t: any) => t.tabRenderer?.title === 'Videos' || t.tabRenderer?.title === '동영상');
-                        const items = videosTab?.tabRenderer?.content?.richGridRenderer?.contents || [];
-
-                        for (const item of items) {
+                    const rssRes = await fetch(rssUrl, {
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+                        next: { revalidate: 0 }
+                    });
+                    
+                    if (rssRes.ok) {
+                        const xmlText = await rssRes.text();
+                        const entries = xmlText.match(/<entry>([\s\S]*?)<\/entry>/g) || [];
+                        
+                        for (const entry of entries) {
                             if (validVideos.length >= 2) break;
-                            const video = item.richItemRenderer?.content?.videoRenderer;
+                            const videoIdMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+                            const titleMatch = entry.match(/<title>([\s\S]*?)<\/title>/);
+                            const descMatch = entry.match(/<media:description>([\s\S]*?)<\/media:description>/);
+                            const pubMatch = entry.match(/<published>([^<]+)<\/published>/);
 
-                            if (video && video.videoId) {
-                                const videoId = video.videoId;
-                                const title = video.title?.runs?.[0]?.text || '';
-                                const description = video.descriptionSnippet?.runs?.map((r: any) => r.text).join('') || title;
-
-                                // ytInitialData의 썸네일 배열은 화면 렌더링용 작은 사이즈 위주로 들어있어서 화질이 떨어질 수 있습니다.
-                                // 때문에 유튜브 공식 고화질 썸네일 규칙(maxresdefault.jpg)을 강제로 생성해서 박아넣습니다.
-                                const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
-
-                                const publishedTimeText = video.publishedTimeText?.simpleText || '';
-                                const publishedAt = parseRelativeTime(publishedTimeText);
+                            if (videoIdMatch && titleMatch) {
+                                const videoId = videoIdMatch[1];
+                                const rawTitle = titleMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+                                const rawDesc = descMatch ? descMatch[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : rawTitle;
 
                                 validVideos.push({
                                     videoId,
-                                    title,
+                                    title: rawTitle,
                                     url: `https://www.youtube.com/watch?v=${videoId}`,
-                                    publishedAt,
-                                    description,
-                                    thumbnail
+                                    publishedAt: pubMatch ? new Date(pubMatch[1]) : new Date(),
+                                    description: rawDesc,
+                                    thumbnail: `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`
                                 });
                             }
                         }
                     }
-                } catch (parseError) {
-                    console.error("JSON parsing failed, regex fallback: ", parseError);
-                    // 최후의 수단: 문자열 정규식 추출
-                    const regex = /"videoId":"([^"]+)","title":\{"runs":\[\{"text":"([^"]+)"\}\]\}/g;
-                    let m: RegExpExecArray | null;
-                    let count = 0;
-                    while ((m = regex.exec(html)) !== null && count < 2) {
-                        const m1 = m![1];
-                        const m2 = m![2];
-                        if (!validVideos.find(v => v.videoId === m1)) {
-                            validVideos.push({
-                                videoId: m1,
-                                title: m2,
-                                url: `https://www.youtube.com/watch?v=${m1}`,
-                                publishedAt: new Date(),
-                                description: m2,
-                                thumbnail: `https://i.ytimg.com/vi/${m1}/maxresdefault.jpg`
-                            });
-                            count++;
+                } catch (rssError) {
+                    console.error(`RSS fetch failed for ${channel.title}, falling back to HTML...`);
+                }
+
+                // 2. If RSS failed (or channel uses a handle not compatible with RSS), fallback to HTML parsing
+                if (validVideos.length === 0) {
+                    const feedUrl = `https://www.youtube.com/channel/${channel.youtubeId}/videos`;
+                    const res = await fetch(feedUrl, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+                            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                            'Cookie': 'SOCS=CAI'
+                        },
+                        next: { revalidate: 0 }
+                    });
+
+                    if (!res.ok) {
+                        console.error(`Failed to fetch HTML for ${channel.title}: ${res.status}`);
+                        await ((prisma as any).creatorChannel.update as any)({
+                            where: { id: channel.id },
+                            data: {
+                                lastScrapedAt: new Date(),
+                                lastScrapeStatus: 'ERROR',
+                                lastScrapeError: `HTTP ${res.status}`
+                            }
+                        });
+                        continue;
+                    }
+
+                    const html = await res.text();
+
+                    try {
+                        const dataStrMatch = html.match(/ytInitialData[ \n\r=]+(\{.*?\});/);
+                        if (dataStrMatch && dataStrMatch[1]) {
+                            const data = JSON.parse(dataStrMatch[1]);
+
+                            const authorName = data?.metadata?.channelMetadataRenderer?.title;
+                            if (authorName && authorName !== channel.title) {
+                                await ((prisma as any).creatorChannel.update as any)({
+                                    where: { id: channel.id },
+                                    data: { title: authorName }
+                                });
+                            }
+
+                            const tabs = data.contents?.twoColumnBrowseResultsRenderer?.tabs || [];
+                            const videosTab = tabs.find((t: any) => t.tabRenderer?.title === 'Videos' || t.tabRenderer?.title === '동영상');
+                            const items = videosTab?.tabRenderer?.content?.richGridRenderer?.contents || [];
+
+                            for (const item of items) {
+                                if (validVideos.length >= 2) break;
+                                const video = item.richItemRenderer?.content?.videoRenderer;
+
+                                if (video && video.videoId) {
+                                    const videoId = video.videoId;
+                                    const title = video.title?.runs?.[0]?.text || '';
+                                    const description = video.descriptionSnippet?.runs?.map((r: any) => r.text).join('') || title;
+                                    const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
+                                    const publishedTimeText = video.publishedTimeText?.simpleText || '';
+                                    const publishedAt = parseRelativeTime(publishedTimeText);
+
+                                    validVideos.push({
+                                        videoId, title, url: `https://www.youtube.com/watch?v=${videoId}`, publishedAt, description, thumbnail
+                                    });
+                                }
+                            }
+                        }
+                    } catch (parseError) {
+                        console.error("JSON parsing failed, regex fallback: ", parseError);
+                        const regex = /"videoId":"([^"]+)","title":\{"runs":\[\{"text":"([^"]+)"\}\]\}/g;
+                        let m: RegExpExecArray | null;
+                        let count = 0;
+                        while ((m = regex.exec(html)) !== null && count < 2) {
+                            if (!validVideos.find(v => v.videoId === m![1])) {
+                                validVideos.push({
+                                    videoId: m![1], title: m![2], url: `https://www.youtube.com/watch?v=${m![1]}`,
+                                    publishedAt: new Date(), description: m![2], thumbnail: `https://i.ytimg.com/vi/${m![1]}/maxresdefault.jpg`
+                                });
+                                count++;
+                            }
                         }
                     }
                 }
@@ -219,9 +241,8 @@ export async function POST(req?: Request) {
 
                 processed.push({ channel: channel.title, newVideos: newCount });
 
-                // 유튜브 404 차단을 우회하기 위해 한 채널 파싱이 끝날 때마다 아주 짧은 휴식(0.3초)만 부여
-                // Vercel 서버리스 타임아웃 방지
-                await new Promise(resolve => setTimeout(resolve, 300));
+                // 유튜브 404 차단을 우회하기 위해 한 채널 파싱이 끝날 때마다 안전한 휴식(1.5초) 부여
+                await new Promise(resolve => setTimeout(resolve, 1500));
 
             } catch (err: any) {
                 console.error(`Error processing channel ${channel.youtubeId}:`, err);
