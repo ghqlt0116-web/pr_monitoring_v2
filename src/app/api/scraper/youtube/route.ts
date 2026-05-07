@@ -67,6 +67,7 @@ export async function POST(req?: Request) {
 
         for (const channel of channels) {
             try {
+                let validVideos: any[] = [];
                 // 1. First, attempt to fetch via YouTube RSS Feed (Immune to most IP blocks)
                 const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.youtubeId}`;
                 try {
