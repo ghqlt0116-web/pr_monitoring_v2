@@ -74,11 +74,11 @@ export async function POST(req?: Request) {
                         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
                         next: { revalidate: 0 }
                     });
-                    
+
                     if (rssRes.ok) {
                         const xmlText = await rssRes.text();
                         const entries = xmlText.match(/<entry>([\s\S]*?)<\/entry>/g) || [];
-                        
+
                         for (const entry of entries) {
                             if (validVideos.length >= 2) break;
                             const videoIdMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
