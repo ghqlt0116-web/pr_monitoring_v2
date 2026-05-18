@@ -193,7 +193,7 @@ export async function POST(req?: Request) {
                                 lastScrapeError: `HTTP ${res.status}`
                             }
                         });
-                        continue;
+                        return;
                     }
 
                     const html = await res.text();
