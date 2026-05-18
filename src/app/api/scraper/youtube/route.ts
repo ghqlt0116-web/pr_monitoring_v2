@@ -40,19 +40,6 @@ export async function POST(req?: Request) {
         const body = req ? await req.json().catch(() => ({})) : {};
         const force = body.force === true;
 
-        if (!force) {
-            const recentCh = await (prisma as any).creatorChannel.findFirst({
-                orderBy: { lastScrapedAt: 'desc' }
-            });
-
-            if (recentCh && recentCh.lastScrapedAt) {
-                const diffMs = new Date().getTime() - new Date(recentCh.lastScrapedAt).getTime();
-                if (diffMs < 5 * 60 * 60 * 1000) {
-                    return NextResponse.json({ success: true, message: 'Recently scraped. Throttled.' });
-                }
-            }
-        }
-
         const channels = await (prisma as any).creatorChannel.findMany();
         const dbKeywords = await (prisma as any).creatorKeyword.findMany({ where: { isActive: true } });
         const keywordStrings = dbKeywords.map((k: any) => k.keyword);

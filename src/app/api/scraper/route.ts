@@ -25,20 +25,6 @@ export async function POST(req?: Request) {
 
     const programs = await prisma.program.findMany();
 
-    // 5시간(18000000ms) 이내에 성공한 모니터링 기록이 있으면 무시 (무한 갱신 방어 - 강제 갱신은 예외)
-    if (!force) {
-      const recentProg = await (prisma.program.findFirst as any)({
-        orderBy: { lastScrapedAt: 'desc' },
-        where: { lastScrapeStatus: 'SUCCESS' }
-      });
-      if (recentProg && recentProg.lastScrapedAt) {
-        const diffMs = new Date().getTime() - new Date(recentProg.lastScrapedAt).getTime();
-        if (diffMs < 5 * 60 * 60 * 1000) {
-          return NextResponse.json({ success: true, message: 'Recently scraped. Throttled.' });
-        }
-      }
-    }
-
     // DB에서 키워드 로드
     const dbKeywords = await prisma.programKeyword.findMany({ where: { isActive: true } });
     let highKeywords = dbKeywords.filter((k: any) => k.level === 'HIGH').map((k: any) => k.keyword);
