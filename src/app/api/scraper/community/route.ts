@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { containsKeyword } from '@/lib/creatorAnalyze';
+import { sendTelegramAlert } from '@/lib/telegram';
 
 export async function POST() {
     try {
@@ -9,6 +10,10 @@ export async function POST() {
         const keywordStrings = dbKeywords.map((k: any) => k.keyword);
 
         const processed = [];
+        let successCount = 0;
+        let errorCount = 0;
+        let newPostsCount = 0;
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pr-monitoring-v2.vercel.app';
 
         for (const target of targets) {
             try {
@@ -53,6 +58,7 @@ export async function POST() {
                         where: { id: target.id },
                         data: { lastScrapedAt: new Date(), lastScrapeStatus: 'ERROR', lastScrapeError: `HTTP ${res.status}` }
                     });
+                    errorCount++;
                     continue;
                 }
 
@@ -124,6 +130,12 @@ export async function POST() {
                             }
                         });
                         newCount++;
+                        newPostsCount++;
+
+                        if (isRecommended) {
+                            const msg = `🚨 [키워드 감지]\n🌐 분류: 커뮤니티 (${target.siteName})\n📝 제목: ${post.title}\n🔗 원문 링크: ${post.url}\n🖥️ 시스템 확인: ${siteUrl}`;
+                            await sendTelegramAlert(msg);
+                        }
                     } else {
                         // 이미 존재하는 게시글 제목이라도 최신 제목으로 덮어쓰기 (썸네일 누락 패치와 동일 원리)
                         await (prisma as any).communityPost.update({
@@ -137,6 +149,7 @@ export async function POST() {
                     where: { id: target.id },
                     data: { lastScrapedAt: new Date(), lastScrapeStatus: 'SUCCESS', lastScrapeError: null }
                 });
+                successCount++;
 
                 processed.push({ target: target.siteName, newPosts: newCount });
 
@@ -147,11 +160,15 @@ export async function POST() {
                     where: { id: target.id },
                     data: { lastScrapedAt: new Date(), lastScrapeStatus: 'ERROR', lastScrapeError: err.message || 'Unknown error' }
                 });
+                errorCount++;
             }
 
             // [IP 차단 방지] 각 블로그/커뮤니티 타겟을 긁은 후, 무조건 1.5초(1500ms) 대기하여 호스트 서버 과부하 및 Vercel Timeout 방어
             await new Promise(resolve => setTimeout(resolve, 1500));
         }
+
+        const summaryMsg = `✅ [모니터링 완료] 외부 커뮤니티\n- 정상 작동: ${successCount}개 사이트\n- 접속 에러: ${errorCount}개 사이트\n- 새로 업데이트: ${newPostsCount}개 게시물\n🖥️ 시스템 대시보드: ${siteUrl}`;
+        await sendTelegramAlert(summaryMsg);
 
         return NextResponse.json({ success: true, processed: processed.length });
 

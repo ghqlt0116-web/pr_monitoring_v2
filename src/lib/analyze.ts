@@ -7,6 +7,7 @@ export function analyzeWithKeywords(title: string, text: string, highKeywords: s
     let matchedKeywords: string[] = [];
 
     for (const kw of highKeywords) {
+        if (!kw || !kw.trim()) continue;
         const parts = kw.split('-');
         const reqParts = parts[0].split('+');
         const exclParts = parts.slice(1);
@@ -22,6 +23,7 @@ export function analyzeWithKeywords(title: string, text: string, highKeywords: s
     }
 
     for (const kw of midKeywords) {
+        if (!kw || !kw.trim()) continue;
         const parts = kw.split('-');
         const reqParts = parts[0].split('+');
         const exclParts = parts.slice(1);

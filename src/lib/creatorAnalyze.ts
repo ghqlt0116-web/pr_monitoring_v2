@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 export function containsKeyword(text: string, keywords: string[]) {
     const spacelessText = text.toLowerCase().replace(/\s+/g, '');
     return keywords.some(k => {
+        if (!k || !k.trim()) return false;
         const parts = k.split('-');
         const reqParts = parts[0].split('+');
         const exclParts = parts.slice(1);

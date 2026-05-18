@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { analyzeWithKeywords } from '@/lib/analyze';
+import { sendTelegramAlert } from '@/lib/telegram';
 
 // 프로그램 기본 설정 맵핑
 const CONFIG: Record<string, { type: 'SBS_API' | 'KBS_API' | 'MBC_HTML', id?: string }> = {
@@ -49,6 +50,10 @@ export async function POST(req?: Request) {
     }
 
     const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+    let newEpisodesCount = 0;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pr-monitoring-v2.vercel.app';
 
     for (const prog of programs) {
       const conf = CONFIG[prog.title];
@@ -187,6 +192,12 @@ export async function POST(req?: Request) {
             }
           });
           results.push({ program: prog.title, newEpisode: saved.title });
+          newEpisodesCount++;
+          
+          if (analysisResult.riskLevel === '상' || analysisResult.riskLevel === '중') {
+              const msg = `🚨 [위험도 ${analysisResult.riskLevel}]\n📺 분류: 시사 프로그램 (${prog.title})\n📝 제목: ${ep.title}\n📌 분석: ${analysisResult.summary}\n🔗 원문 링크: ${ep.url}\n🖥️ 시스템 확인: ${siteUrl}`;
+              await sendTelegramAlert(msg);
+          }
         }
 
       } catch (err: any) {
@@ -199,6 +210,7 @@ export async function POST(req?: Request) {
             lastScrapeError: err.message || 'Unknown error'
           }
         });
+        errorCount++;
         continue;
       }
 
@@ -210,7 +222,11 @@ export async function POST(req?: Request) {
           lastScrapeError: null
         }
       });
+      successCount++;
     }
+
+    const summaryMsg = `✅ [모니터링 완료] 시사 프로그램\n- 정상 작동: ${successCount}개 프로그램\n- 접속 에러: ${errorCount}개 프로그램\n- 새로 업데이트: ${newEpisodesCount}개 영상\n🖥️ 시스템 대시보드: ${siteUrl}`;
+    await sendTelegramAlert(summaryMsg);
 
     return NextResponse.json({ success: true, processed: results });
   } catch (error: any) {
