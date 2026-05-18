@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { containsKeyword } from '@/lib/creatorAnalyze';
 import { sendTelegramAlert } from '@/lib/telegram';
 
+export async function GET() { return POST(); }
+
 export async function POST() {
     try {
         const targets = await (prisma as any).communityTarget.findMany();
