@@ -159,30 +159,40 @@ export async function POST(req?: Request) {
 
         // DB Save & Analyze - Only keep the latest episode per program
         if (extracted.length > 0) {
-          // Delete all existing episodes for this program to ensure ONLY the newest is shown
-          await (prisma.episode.deleteMany as any)({ where: { programId: prog.id } });
-
           const ep = extracted[0]; // Take only the freshest 1st item
-          const analysisResult = analyzeWithKeywords(ep.title, ep.content, highKeywords, midKeywords);
-          const saved = await (prisma.episode.create as any)({
-            data: {
-              programId: prog.id,
-              title: ep.title.replace(/^[^a-zA-Z0-9가-힣]+/, '').trim(), // Remove weird leading symbols
-              content: ep.content.substring(0, 1000), // Max 1000 chars
-              originalUrl: ep.url,
-              thumbnail: ep.thumb,
-              broadcastDate: ep.date,
-              category: analysisResult.category,
-              riskLevel: analysisResult.riskLevel,
-              summary: analysisResult.summary,
-            }
-          });
-          results.push({ program: prog.title, newEpisode: saved.title });
-          newEpisodesCount++;
+          const cleanTitle = ep.title.replace(/^[^a-zA-Z0-9가-힣]+/, '').trim();
           
-          if (analysisResult.riskLevel === '상' || analysisResult.riskLevel === '중') {
-              const msg = `🚨 [위험도 ${analysisResult.riskLevel}]\n📺 분류: 시사 프로그램 (${prog.title})\n📝 제목: ${ep.title}\n📌 분석: ${analysisResult.summary}\n🔗 원문 링크: ${ep.url}\n🖥️ 시스템 확인: ${siteUrl}`;
-              await sendTelegramAlert(msg);
+          const existing = await (prisma.episode.findFirst as any)({
+             where: { programId: prog.id },
+             orderBy: { broadcastDate: 'desc' }
+          });
+
+          // Check if it's actually a new episode
+          if (!existing || existing.title.replace(/^[^a-zA-Z0-9가-힣]+/, '').trim() !== cleanTitle) {
+              // Delete all existing episodes for this program to ensure ONLY the newest is shown
+              await (prisma.episode.deleteMany as any)({ where: { programId: prog.id } });
+
+              const analysisResult = analyzeWithKeywords(ep.title, ep.content, highKeywords, midKeywords);
+              const saved = await (prisma.episode.create as any)({
+                data: {
+                  programId: prog.id,
+                  title: cleanTitle,
+                  content: ep.content.substring(0, 1000), // Max 1000 chars
+                  originalUrl: ep.url,
+                  thumbnail: ep.thumb,
+                  broadcastDate: ep.date,
+                  category: analysisResult.category,
+                  riskLevel: analysisResult.riskLevel,
+                  summary: analysisResult.summary,
+                }
+              });
+              results.push({ program: prog.title, newEpisode: saved.title });
+              newEpisodesCount++;
+              
+              if (analysisResult.riskLevel === '상' || analysisResult.riskLevel === '중') {
+                  const msg = `🚨 [위험도 ${analysisResult.riskLevel}]\n📺 분류: 시사 프로그램 (${prog.title})\n📝 제목: ${ep.title}\n📌 분석: ${analysisResult.summary}\n🔗 원문 링크: ${ep.url}\n🖥️ 시스템 확인: ${siteUrl}`;
+                  await sendTelegramAlert(msg);
+              }
           }
         }
 

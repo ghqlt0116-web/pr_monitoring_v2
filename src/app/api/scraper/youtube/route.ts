@@ -49,15 +49,19 @@ export async function POST(req?: Request) {
             keywordStrings.push('망 사용료', 'cp사', '트래픽', '통신사', 'skb', '망이용대가');
         }
 
-        // Promise.all 대신 순차적(for...of) 실행으로 변경하여 YouTube의 429 Too Many Requests (동시 접속 차단) 에러를 방지합니다.
-        const processed = [];
+        // Vercel Timeout(15s) 방지 및 유튜브 IP 차단을 동시 방어하기 위한 Chunking 병렬 처리 (10개씩)
+        const processed: any[] = [];
         let successCount = 0;
         let errorCount = 0;
         let newVideosCount = 0;
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pr-monitoring-v2.vercel.app';
 
-        for (const channel of channels) {
-            try {
+        const chunkSize = 10;
+        for (let i = 0; i < channels.length; i += chunkSize) {
+            const chunk = channels.slice(i, i + chunkSize);
+
+            await Promise.all(chunk.map(async (channel: any) => {
+                try {
                 let validVideos: any[] = [];
                 let rawId = channel.youtubeId.trim();
 
@@ -326,11 +330,7 @@ export async function POST(req?: Request) {
                     }
                 });
                 successCount++;
-
                 processed.push({ channel: channel.title, newVideos: newCount });
-
-                // 유튜브 404 차단을 우회하기 위해 한 채널 파싱이 끝날 때마다 안전한 휴식(1.5초) 부여
-                await new Promise(resolve => setTimeout(resolve, 1500));
 
             } catch (err: any) {
                 console.error(`Error processing channel ${channel.youtubeId}:`, err);
@@ -344,7 +344,13 @@ export async function POST(req?: Request) {
                 });
                 errorCount++;
             }
+        })); // end of Promise.all for chunk
+        
+        // 유튜브 차단을 우회하기 위해 한 묶음 파싱이 끝날 때마다 짧은 휴식(0.5초) 부여
+        if (i + chunkSize < channels.length) {
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
+    } // end of chunk loop
 
         const summaryMsg = `✅ [모니터링 완료] 유튜브\n- 정상 작동: ${successCount}개 채널\n- 접속 에러: ${errorCount}개 채널\n- 새로 업데이트: ${newVideosCount}개 영상\n🖥️ 시스템 대시보드: ${siteUrl}`;
         await sendTelegramAlert(summaryMsg);
