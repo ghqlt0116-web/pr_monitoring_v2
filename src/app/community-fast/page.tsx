@@ -94,8 +94,6 @@ export default function CommunityFastDashboard() {
 
         if (hasError) {
             alert("키워드 추가 중 일부 실패: " + errorMessage);
-        } else {
-            alert("키워드가 성공적으로 등록되었습니다!");
         }
 
         setNewKeyword('');

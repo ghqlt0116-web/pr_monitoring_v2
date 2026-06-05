@@ -18,15 +18,18 @@ export async function GET(req: Request) {
             const decodedHtml = iconv.decode(Buffer.from(htmlBuffer), 'euc-kr');
             const $ = cheerio.load(decodedHtml);
 
-            $('tr.list1, tr.list0').each((i, el) => {
+            $('tr').each((i, el) => {
                 if (posts.length >= 10) return; // limit to 10 for preview
-                const aTag = $(el).find('a').filter((_, a) => $(a).attr('href')?.includes('view.php?id=freeboard') ?? false);
-                if (aTag.length > 0) {
-                    const title = aTag.text().trim();
-                    const href = aTag.attr('href')!;
-                    const noMatch = href.match(/no=(\d+)/);
-                    if (noMatch) {
-                        posts.push({ id: noMatch[1], title, url: 'https://www.ppomppu.co.kr/zboard/' + href });
+                const classAttr = $(el).attr('class') || '';
+                if (classAttr.includes('list') || classAttr.includes('item') || classAttr.includes('baseList')) {
+                    const aTag = $(el).find('a').filter((_, a) => $(a).attr('href')?.includes('view.php?id=freeboard') ?? false);
+                    if (aTag.length > 0) {
+                        const title = aTag.first().text().trim();
+                        const href = aTag.first().attr('href')!;
+                        const noMatch = href.match(/no=(\d+)/);
+                        if (noMatch && title) {
+                            posts.push({ id: noMatch[1], title, url: 'https://www.ppomppu.co.kr/zboard/' + href });
+                        }
                     }
                 }
             });
@@ -36,8 +39,12 @@ export async function GET(req: Request) {
             const html = await res.text();
             const $ = cheerio.load(html);
 
-            $('tr.table_body:not(.notice)').each((i, el) => {
+            $('tr.table_body:not(.notice):not(.best):not(.inside)').each((i, el) => {
                 if (posts.length >= 10) return; // limit to 10 for preview
+                
+                const category = $(el).find('.divsn').text().trim();
+                if (category && category !== '유머' && category !== '장작') return;
+
                 const aTag = $(el).find('a.subject_link');
                 const title = aTag.text().trim();
                 const href = aTag.attr('href');

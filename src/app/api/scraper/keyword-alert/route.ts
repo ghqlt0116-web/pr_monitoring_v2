@@ -27,14 +27,17 @@ export async function POST() {
                 const decodedHtml = iconv.decode(Buffer.from(htmlBuffer), 'euc-kr');
                 const $ = cheerio.load(decodedHtml);
 
-                $('tr.list1, tr.list0').each((i, el) => {
-                    const aTag = $(el).find('a').filter((i, a) => $(a).attr('href')?.includes('view.php?id=freeboard') ?? false);
-                    if(aTag.length > 0) {
-                        const title = aTag.text().trim();
-                        const href = aTag.attr('href')!;
-                        const noMatch = href.match(/no=(\d+)/);
-                        if(noMatch) {
-                            posts.push({ id: noMatch[1], title, url: 'https://www.ppomppu.co.kr/zboard/' + href });
+                $('tr').each((i, el) => {
+                    const classAttr = $(el).attr('class') || '';
+                    if (classAttr.includes('list') || classAttr.includes('item') || classAttr.includes('baseList')) {
+                        const aTag = $(el).find('a').filter((i, a) => $(a).attr('href')?.includes('view.php?id=freeboard') ?? false);
+                        if(aTag.length > 0) {
+                            const title = aTag.first().text().trim();
+                            const href = aTag.first().attr('href')!;
+                            const noMatch = href.match(/no=(\d+)/);
+                            if(noMatch && title) {
+                                posts.push({ id: noMatch[1], title, url: 'https://www.ppomppu.co.kr/zboard/' + href });
+                            }
                         }
                     }
                 });
@@ -44,7 +47,11 @@ export async function POST() {
                 const html = await res.text();
                 const $ = cheerio.load(html);
 
-                $('tr.table_body:not(.notice)').each((i, el) => {
+                $('tr.table_body:not(.notice):not(.best):not(.inside)').each((i, el) => {
+                    const category = $(el).find('.divsn').text().trim();
+                    // 유머게시판 모니터링이므로 질문, 잡담 등은 제외 (유머, 장작 등 핵심 카테고리만 포함)
+                    if (category && category !== '유머' && category !== '장작') return;
+
                     const aTag = $(el).find('a.subject_link');
                     const title = aTag.text().trim();
                     const href = aTag.attr('href');
