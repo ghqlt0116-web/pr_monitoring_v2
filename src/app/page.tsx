@@ -130,9 +130,6 @@ export default function Dashboard() {
     fetchEpisodes();
     fetchSettings();
     fetchPrograms();
-
-    // 접속 시 백그라운드로 자동 스크래핑 시도 (서버에서 5시간 쿨타임으로 방어됨)
-    handleScrape(true);
   }, []);
 
   const autoSaveSettings = async (newHigh: string[], newMid: string[]) => {
@@ -211,9 +208,17 @@ export default function Dashboard() {
           </div>
 
           <div className={styles.navGroup}>
+            <Link href="/community-fast" replace style={{ textDecoration: 'none' }}>
+              <div className={styles.navGroupHeader}>
+                <span><Activity size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#f59e0b" />커뮤니티 (실시간)</span>
+              </div>
+            </Link>
+          </div>
+
+          <div className={styles.navGroup}>
             <Link href="/community" replace style={{ textDecoration: 'none' }}>
               <div className={styles.navGroupHeader}>
-                <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />외부 커뮤니티</span>
+                <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />블로그 모니터링</span>
               </div>
             </Link>
           </div>

@@ -282,9 +282,17 @@ export default function CreatorsDashboard() {
                     </div>
 
                     <div className={styles.navGroup}>
+                        <Link href="/community-fast" replace style={{ textDecoration: 'none' }}>
+                            <div className={styles.navGroupHeader}>
+                                <span><Activity size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#f59e0b" />커뮤니티 (실시간)</span>
+                            </div>
+                        </Link>
+                    </div>
+
+                    <div className={styles.navGroup}>
                         <Link href="/community" replace style={{ textDecoration: 'none' }}>
                             <div className={styles.navGroupHeader}>
-                                <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />외부 커뮤니티</span>
+                                <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />블로그 모니터링</span>
                             </div>
                         </Link>
                     </div>

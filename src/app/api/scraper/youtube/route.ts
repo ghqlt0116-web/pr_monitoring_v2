@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as cheerio from 'cheerio';
 import { containsKeyword } from '@/lib/creatorAnalyze';
-import { sendTelegramAlert } from '@/lib/telegram';
+import { sendTelegramAlert, sendTelegramSummary } from '@/lib/telegram';
 
-export async function GET(req: Request) { return POST(req); }
+
 
 function parseRelativeTime(text: string) {
     if (!text) return new Date();
@@ -353,7 +353,7 @@ export async function POST(req?: Request) {
     } // end of chunk loop
 
         const summaryMsg = `✅ [모니터링 완료] 유튜브\n- 정상 작동: ${successCount}개 채널\n- 접속 에러: ${errorCount}개 채널\n- 새로 업데이트: ${newVideosCount}개 영상\n🖥️ 시스템 대시보드: ${siteUrl}`;
-        await sendTelegramAlert(summaryMsg);
+        await sendTelegramSummary(summaryMsg);
 
         return NextResponse.json({ success: true, processed });
 

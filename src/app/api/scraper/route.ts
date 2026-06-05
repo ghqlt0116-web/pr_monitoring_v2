@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio';
 import fs from 'fs';
 import path from 'path';
 import { analyzeWithKeywords } from '@/lib/analyze';
-import { sendTelegramAlert } from '@/lib/telegram';
+import { sendTelegramAlert, sendTelegramSummary } from '@/lib/telegram';
 
 // 프로그램 기본 설정 맵핑
 const CONFIG: Record<string, { type: 'SBS_API' | 'KBS_API' | 'MBC_HTML', id?: string }> = {
@@ -16,7 +16,7 @@ const CONFIG: Record<string, { type: 'SBS_API' | 'KBS_API' | 'MBC_HTML', id?: st
   '탐사기획 스트레이트': { type: 'MBC_HTML', id: '1003647100000100000' },
 };
 
-export async function GET() { return POST(); }
+
 
 export async function POST(req?: Request) {
   try {
@@ -222,7 +222,7 @@ export async function POST(req?: Request) {
     }
 
     const summaryMsg = `✅ [모니터링 완료] 시사 프로그램\n- 정상 작동: ${successCount}개 프로그램\n- 접속 에러: ${errorCount}개 프로그램\n- 새로 업데이트: ${newEpisodesCount}개 영상\n🖥️ 시스템 대시보드: ${siteUrl}`;
-    await sendTelegramAlert(summaryMsg);
+    await sendTelegramSummary(summaryMsg);
 
     return NextResponse.json({ success: true, processed: results });
   } catch (error: any) {

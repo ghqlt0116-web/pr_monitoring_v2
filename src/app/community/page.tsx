@@ -234,8 +234,16 @@ export default function CommunityDashboard() {
                 </div>
 
                 <div className={styles.navGroup}>
+                    <Link href="/community-fast" replace style={{ textDecoration: 'none' }}>
+                        <div className={styles.navGroupHeader}>
+                            <span><Activity size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#f59e0b" />커뮤니티 (실시간)</span>
+                        </div>
+                    </Link>
+                </div>
+
+                <div className={styles.navGroup}>
                     <div className={`${styles.navGroupHeader} ${styles.activeNav}`}>
-                        <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />외부 커뮤니티</span>
+                        <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />블로그 모니터링</span>
                     </div>
                     <div className={styles.subNav}>
                         <a href="#" className={`${styles.navItem} ${currentView === 'dashboard' ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); setCurrentView('dashboard'); }}>
@@ -257,7 +265,7 @@ export default function CommunityDashboard() {
             <main className={styles.main}>
                 <header className={`animate-fade-in ${styles.header}`}>
                     <div>
-                        <h2 className={styles.pageTitle}>외부 커뮤니티 모니터링</h2>
+                        <h2 className={styles.pageTitle}>블로그 모니터링</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
                             <p className={styles.subtitle} style={{ margin: 0 }}>블로그/커뮤니티 리스크 실시간 추적 대시보드</p>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>

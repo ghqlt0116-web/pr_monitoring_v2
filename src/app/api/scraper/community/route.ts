@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { containsKeyword } from '@/lib/creatorAnalyze';
-import { sendTelegramAlert } from '@/lib/telegram';
+import { sendTelegramAlert, sendTelegramSummary } from '@/lib/telegram';
 
-export async function GET() { return POST(); }
+
 
 export async function POST() {
     try {
@@ -170,7 +170,7 @@ export async function POST() {
         }
 
         const summaryMsg = `✅ [모니터링 완료] 외부 커뮤니티\n- 정상 작동: ${successCount}개 사이트\n- 접속 에러: ${errorCount}개 사이트\n- 새로 업데이트: ${newPostsCount}개 게시물\n🖥️ 시스템 대시보드: ${siteUrl}`;
-        await sendTelegramAlert(summaryMsg);
+        await sendTelegramSummary(summaryMsg);
 
         return NextResponse.json({ success: true, processed: processed.length });
 
