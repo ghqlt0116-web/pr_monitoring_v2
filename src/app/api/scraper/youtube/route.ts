@@ -35,14 +35,6 @@ function parseRelativeDate(text: string): Date {
     return now;
 }
 
-export async function GET(req: Request) {
-    const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    return POST(req);
-}
-
 export async function POST(req?: Request) {
     try {
         const body = req ? await req.json().catch(() => ({})) : {};
