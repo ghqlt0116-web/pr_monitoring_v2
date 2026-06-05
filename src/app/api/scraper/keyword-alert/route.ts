@@ -28,7 +28,7 @@ export async function POST() {
                 const $ = cheerio.load(decodedHtml);
 
                 $('tr.list1, tr.list0').each((i, el) => {
-                    const aTag = $(el).find('a').filter((i, a) => $(a).attr('href')?.includes('view.php?id=freeboard'));
+                    const aTag = $(el).find('a').filter((i, a) => $(a).attr('href')?.includes('view.php?id=freeboard') ?? false);
                     if(aTag.length > 0) {
                         const title = aTag.text().trim();
                         const href = aTag.attr('href')!;
