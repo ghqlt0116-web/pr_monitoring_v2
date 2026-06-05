@@ -234,14 +234,6 @@ export default function CommunityDashboard() {
                 </div>
 
                 <div className={styles.navGroup}>
-                    <Link href="/community-fast" replace style={{ textDecoration: 'none' }}>
-                        <div className={styles.navGroupHeader}>
-                            <span><Activity size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#f59e0b" />커뮤니티 (실시간)</span>
-                        </div>
-                    </Link>
-                </div>
-
-                <div className={styles.navGroup}>
                     <div className={`${styles.navGroupHeader} ${styles.activeNav}`}>
                         <span><Globe size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#10b981" />블로그 모니터링</span>
                     </div>
@@ -253,6 +245,14 @@ export default function CommunityDashboard() {
                             <Settings size={18} /> 모니터링 설정
                         </a>
                     </div>
+                </div>
+
+                <div className={styles.navGroup}>
+                    <Link href="/community-fast" replace style={{ textDecoration: 'none' }}>
+                        <div className={styles.navGroupHeader}>
+                            <span><Activity size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} color="#f59e0b" />커뮤니티 모니터링</span>
+                        </div>
+                    </Link>
                 </div>
             </nav>
         </aside>

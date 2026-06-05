@@ -4,9 +4,38 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const targets = await (prisma as any).realtimeCommunityTarget.findMany({
+        let targets = await (prisma as any).realtimeCommunityTarget.findMany({
             orderBy: { createdAt: 'desc' }
         });
+
+        // Auto-seed default targets if missing
+        if (targets.length === 0) {
+            await (prisma as any).realtimeCommunityTarget.createMany({
+                data: [
+                    { siteName: '뽐뿌 (자유게시판)', siteType: 'PPOMPPU' },
+                    { siteName: '루리웹 (유머게시판)', siteType: 'RULIWEB' }
+                ]
+            });
+            targets = await (prisma as any).realtimeCommunityTarget.findMany({
+                orderBy: { createdAt: 'desc' }
+            });
+        } else if (targets.length === 1) {
+            // In case only one exists, ensure both exist
+            const existingTypes = targets.map((t: any) => t.siteType);
+            const defaults = [
+                { siteName: '뽐뿌 (자유게시판)', siteType: 'PPOMPPU' },
+                { siteName: '루리웹 (유머게시판)', siteType: 'RULIWEB' }
+            ];
+            for (const def of defaults) {
+                if (!existingTypes.includes(def.siteType)) {
+                    await (prisma as any).realtimeCommunityTarget.create({ data: def });
+                }
+            }
+            targets = await (prisma as any).realtimeCommunityTarget.findMany({
+                orderBy: { createdAt: 'desc' }
+            });
+        }
+
         return NextResponse.json(targets);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,9 +51,12 @@ export async function POST(req: Request) {
             siteName = siteType === 'PPOMPPU' ? '뽐뿌 (자유게시판)' : siteType === 'RULIWEB' ? '루리웹 (유머게시판)' : '커뮤니티';
         }
 
-        const target = await (prisma as any).realtimeCommunityTarget.create({
-            data: { siteName, siteType }
-        });
+        let target = await (prisma as any).realtimeCommunityTarget.findUnique({ where: { siteType } });
+        if (!target) {
+            target = await (prisma as any).realtimeCommunityTarget.create({
+                data: { siteName, siteType }
+            });
+        }
         return NextResponse.json(target);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

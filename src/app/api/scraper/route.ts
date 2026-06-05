@@ -16,7 +16,13 @@ const CONFIG: Record<string, { type: 'SBS_API' | 'KBS_API' | 'MBC_HTML', id?: st
   '탐사기획 스트레이트': { type: 'MBC_HTML', id: '1003647100000100000' },
 };
 
-
+export async function GET(req: Request) {
+  const authHeader = req.headers.get('authorization');
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  return POST(req);
+}
 
 export async function POST(req?: Request) {
   try {

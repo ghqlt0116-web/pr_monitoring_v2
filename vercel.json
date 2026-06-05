@@ -1,2 +1,16 @@
 {
+  "crons": [
+    {
+      "path": "/api/scraper",
+      "schedule": "0 23,5,9,13 * * *"
+    },
+    {
+      "path": "/api/scraper/youtube",
+      "schedule": "0 23,5,9,13 * * *"
+    },
+    {
+      "path": "/api/scraper/community",
+      "schedule": "0 23,5,9,13 * * *"
+    }
+  ]
 }
