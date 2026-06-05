@@ -142,3 +142,24 @@ model CommunityPost {
 
   target          CommunityTarget @relation(fields: [targetId], references: [id])
 }
+
+// ==========================================
+// 4. 실시간 커뮤니티 (뽐뿌/루리웹) 모니터링
+// ==========================================
+
+model RealtimeCommunityTarget {
+  id               Int       @id @default(autoincrement())
+  siteName         String    // 예: "뽐뿌", "루리웹"
+  siteType         String    @unique // "PPOMPPU", "RULIWEB" 등 식별자
+  lastScrapedPostId String?  // 중복 알림 방지용 가장 최근 파싱한 게시글 ID
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+}
+
+model RealtimeKeyword {
+  id        Int      @id @default(autoincrement())
+  keyword   String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
