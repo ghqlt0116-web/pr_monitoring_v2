@@ -91,55 +91,54 @@ export async function POST() {
                         }
                     }
                 } else if (target.siteType === 'RULIWEB') {
-                    // 1순위: 공식 RSS 피드 (Cloudflare WAF 봇 차단 및 타임아웃 0% 면역)
-                    try {
-                        const rssUrl = 'https://bbs.ruliweb.com/community/board/300143/rss';
-                        const res = await fetch(rssUrl, {
-                            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                            cache: 'no-store',
-                            signal: AbortSignal.timeout(5000)
-                        });
-                        if (res.ok) {
-                            const xmlText = await res.text();
-                            const $ = cheerio.load(xmlText, { xmlMode: true });
-                            $('item').each((i, el) => {
-                                const title = $(el).find('title').text().trim();
-                                const link = $(el).find('link').text().trim() || $(el).find('guid').text().trim();
-                                const noMatch = link.match(/read\/(\d+)/);
-                                if (title && noMatch) {
-                                    posts.push({ id: noMatch[1], title, url: link });
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.error("Ruliweb RSS scrape failed:", e);
-                    }
+                    const ruliwebUrls = [
+                        'https://bbs.ruliweb.com/community/board/300143/rss',
+                        'https://m.ruliweb.com/community/board/300143',
+                        'https://m.ruliweb.com/best/humor_only/now'
+                    ];
 
-                    // 2순위 폴백: 모바일 웹 파싱
-                    if (posts.length === 0) {
+                    for (const url of ruliwebUrls) {
+                        if (posts.length >= 10) break;
                         try {
-                            const mobileUrl = `https://m.ruliweb.com/community/board/300143`;
-                            const res = await fetch(mobileUrl, {
+                            const res = await fetch(url, {
                                 headers: { ...BROWSER_HEADERS, 'Referer': 'https://m.ruliweb.com/' },
                                 cache: 'no-store',
-                                signal: AbortSignal.timeout(4000)
+                                signal: AbortSignal.timeout(5000)
                             });
-                            if (res.ok) {
-                                const html = await res.text();
-                                const $ = cheerio.load(html);
-                                $('a[href*="/read/"]').each((i, el) => {
-                                    const href = $(el).attr('href') || '';
-                                    const noMatch = href.match(/read\/(\d+)/);
-                                    const title = $(el).text().trim();
-                                    if (noMatch && title && title.length > 2) {
-                                        if (!posts.some(p => p.id === noMatch[1])) {
-                                            posts.push({ id: noMatch[1], title, url: href.startsWith('http') ? href : `https://m.ruliweb.com${href}` });
-                                        }
+                            if (!res.ok) continue;
+
+                            const text = await res.text();
+
+                            // Case 1: RSS XML
+                            if (text.includes('<rss') || text.includes('<item>')) {
+                                const $ = cheerio.load(text, { xmlMode: true });
+                                $('item').each((i, el) => {
+                                    const title = $(el).find('title').text().trim();
+                                    const link = $(el).find('link').text().trim() || $(el).find('guid').text().trim();
+                                    const noMatch = link.match(/read\/(\d+)/);
+                                    if (title && noMatch && !posts.some(p => p.id === noMatch[1])) {
+                                        posts.push({ id: noMatch[1], title: title.replace(/\s+/g, ' '), url: link });
                                     }
                                 });
                             }
+
+                            // Case 2: HTML Page
+                            if (posts.length === 0) {
+                                const $ = cheerio.load(text);
+                                $('a.subject_link, a.subject, a.title, .list_body a, tr.table_body a.subject_link, a[href*="/read/"]').each((i, el) => {
+                                    const href = $(el).attr('href') || '';
+                                    const noMatch = href.match(/read\/(\d+)/);
+                                    const title = $(el).text().trim();
+                                    if (noMatch && title && title.length > 1 && !posts.some(p => p.id === noMatch[1])) {
+                                        const cleanTitle = title.replace(/\s+/g, ' ').replace(/\(\d+\)$/, '').trim();
+                                        posts.push({ id: noMatch[1], title: cleanTitle, url: href.startsWith('http') ? href : `https://m.ruliweb.com${href}` });
+                                    }
+                                });
+                            }
+
+                            if (posts.length > 0) break;
                         } catch (e) {
-                            console.error("Ruliweb mobile fallback failed:", e);
+                            console.error(`Ruliweb scrape failed for ${url}:`, e);
                         }
                     }
                 }
