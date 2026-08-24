@@ -92,9 +92,9 @@ export async function POST() {
                     }
                 } else if (target.siteType === 'RULIWEB') {
                     const ruliwebUrls = [
-                        'https://bbs.ruliweb.com/community/board/300143/rss',
-                        'https://m.ruliweb.com/community/board/300143',
-                        'https://m.ruliweb.com/best/humor_only/now'
+                        'https://m.ruliweb.com/community/board/300143/list',
+                        'https://m.ruliweb.com/best/humor_only/now',
+                        'https://bbs.ruliweb.com/community/board/300143/rss'
                     ];
 
                     for (const url of ruliwebUrls) {
@@ -103,35 +103,35 @@ export async function POST() {
                             const res = await fetch(url, {
                                 headers: { ...BROWSER_HEADERS, 'Referer': 'https://m.ruliweb.com/' },
                                 cache: 'no-store',
-                                signal: AbortSignal.timeout(5000)
+                                signal: AbortSignal.timeout(4000)
                             });
                             if (!res.ok) continue;
 
                             const text = await res.text();
 
-                            // Case 1: RSS XML
-                            if (text.includes('<rss') || text.includes('<item>')) {
-                                const $ = cheerio.load(text, { xmlMode: true });
-                                $('item').each((i, el) => {
-                                    const title = $(el).find('title').text().trim();
-                                    const link = $(el).find('link').text().trim() || $(el).find('guid').text().trim();
+                            // Case 1: HTML Page (모바일 전용 최신 목록 파싱)
+                            const $ = cheerio.load(text);
+                            $('.list_body a.subject, .list_body a.title, a.subject, a.title, .board_list a, a.subject_link, a[href*="/read/"]').each((i, el) => {
+                                if (posts.length >= 10) return;
+                                const href = $(el).attr('href') || '';
+                                const noMatch = href.match(/read\/(\d+)/);
+                                const title = $(el).text().trim();
+                                if (noMatch && title && title.length > 1 && !posts.some(p => p.id === noMatch[1])) {
+                                    const cleanTitle = title.replace(/\s+/g, ' ').replace(/\(\d+\)$/, '').trim();
+                                    posts.push({ id: noMatch[1], title: cleanTitle, url: href.startsWith('http') ? href : `https://m.ruliweb.com${href}` });
+                                }
+                            });
+
+                            // Case 2: RSS XML Fallback
+                            if (posts.length === 0 && (text.includes('<rss') || text.includes('<item>')) ) {
+                                const $xml = cheerio.load(text, { xmlMode: true });
+                                $xml('item').each((i, el) => {
+                                    if (posts.length >= 10) return;
+                                    const title = $xml(el).find('title').text().trim();
+                                    const link = $xml(el).find('link').text().trim() || $xml(el).find('guid').text().trim();
                                     const noMatch = link.match(/read\/(\d+)/);
                                     if (title && noMatch && !posts.some(p => p.id === noMatch[1])) {
                                         posts.push({ id: noMatch[1], title: title.replace(/\s+/g, ' '), url: link });
-                                    }
-                                });
-                            }
-
-                            // Case 2: HTML Page
-                            if (posts.length === 0) {
-                                const $ = cheerio.load(text);
-                                $('a.subject_link, a.subject, a.title, .list_body a, tr.table_body a.subject_link, a[href*="/read/"]').each((i, el) => {
-                                    const href = $(el).attr('href') || '';
-                                    const noMatch = href.match(/read\/(\d+)/);
-                                    const title = $(el).text().trim();
-                                    if (noMatch && title && title.length > 1 && !posts.some(p => p.id === noMatch[1])) {
-                                        const cleanTitle = title.replace(/\s+/g, ' ').replace(/\(\d+\)$/, '').trim();
-                                        posts.push({ id: noMatch[1], title: cleanTitle, url: href.startsWith('http') ? href : `https://m.ruliweb.com${href}` });
                                     }
                                 });
                             }
