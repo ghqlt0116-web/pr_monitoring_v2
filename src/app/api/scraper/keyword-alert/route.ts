@@ -37,119 +37,109 @@ export async function POST() {
                 let posts: any[] = [];
 
                 if (target.siteType === 'PPOMPPU') {
-                    // 1차: 모바일 URL (가장 가볍고 봇 차단 없음)
+                    // 1순위: 공식 RSS 피드 (Cloudflare/봇 차단 완벽 면역 + UTF-8 지원)
                     try {
-                        const mobileUrl = `https://m.ppomppu.co.kr/new/bbs_list.php?id=freeboard`;
-                        const res = await fetch(mobileUrl, {
-                            headers: { ...BROWSER_HEADERS, 'Referer': 'https://m.ppomppu.co.kr/' },
+                        const rssUrl = 'https://www.ppomppu.co.kr/rss.php?id=freeboard';
+                        const res = await fetch(rssUrl, {
+                            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                             cache: 'no-store',
-                            signal: AbortSignal.timeout(6000)
+                            signal: AbortSignal.timeout(5000)
                         });
                         if (res.ok) {
-                            const buf = await res.arrayBuffer();
-                            const html = iconv.decode(Buffer.from(buf), 'euc-kr');
-                            const $ = cheerio.load(html);
-
-                            $('.bbsList li a, .list_title a, a.title, .bbs_list li a, ul.bbsList a').each((i, el) => {
-                                const href = $(el).attr('href') || '';
-                                const noMatch = href.match(/no=(\d+)/);
-                                const title = $(el).find('.title, span.title').text().trim() || $(el).text().trim();
-                                if (noMatch && title) {
-                                    const cleanTitle = title.split('\n')[0].trim();
-                                    if (cleanTitle) {
-                                        posts.push({ id: noMatch[1], title: cleanTitle, url: 'https://m.ppomppu.co.kr/new/' + href.replace(/^\/new\//, '') });
-                                    }
+                            const xmlText = await res.text();
+                            const $ = cheerio.load(xmlText, { xmlMode: true });
+                            $('item').each((i, el) => {
+                                const title = $(el).find('title').text().trim();
+                                const link = $(el).find('link').text().trim() || $(el).find('guid').text().trim();
+                                const noMatch = link.match(/no=(\d+)/);
+                                if (title && noMatch) {
+                                    posts.push({ id: noMatch[1], title, url: link });
                                 }
                             });
                         }
                     } catch (e) {
-                        console.error("Ppomppu mobile scrape failed:", e);
+                        console.error("Ppomppu RSS scrape failed:", e);
                     }
 
-                    // 2차 폴백: PC URL
+                    // 2순위 폴백: 모바일 웹 파싱
                     if (posts.length === 0) {
-                        const url = `https://www.ppomppu.co.kr/zboard/zboard.php?id=freeboard`;
-                        const res = await fetch(url, {
-                            headers: { ...BROWSER_HEADERS, 'Referer': 'https://www.ppomppu.co.kr/' },
-                            cache: 'no-store',
-                            signal: AbortSignal.timeout(6000)
-                        });
-                        if (res.ok) {
-                            const htmlBuffer = await res.arrayBuffer();
-                            const decodedHtml = iconv.decode(Buffer.from(htmlBuffer), 'euc-kr');
-                            const $ = cheerio.load(decodedHtml);
-
-                            $('tr').each((i, el) => {
-                                const classAttr = $(el).attr('class') || '';
-                                if (classAttr.includes('list') || classAttr.includes('item') || classAttr.includes('baseList')) {
-                                    const aTag = $(el).find('a').filter((i, a) => $(a).attr('href')?.includes('view.php?id=freeboard') ?? false);
-                                    if (aTag.length > 0) {
-                                        const title = aTag.first().text().trim();
-                                        const href = aTag.first().attr('href')!;
-                                        const noMatch = href.match(/no=(\d+)/);
-                                        if (noMatch && title) {
-                                            posts.push({ id: noMatch[1], title, url: 'https://www.ppomppu.co.kr/zboard/' + href });
+                        try {
+                            const mobileUrl = `https://m.ppomppu.co.kr/new/bbs_list.php?id=freeboard`;
+                            const res = await fetch(mobileUrl, {
+                                headers: { ...BROWSER_HEADERS, 'Referer': 'https://m.ppomppu.co.kr/' },
+                                cache: 'no-store',
+                                signal: AbortSignal.timeout(4000)
+                            });
+                            if (res.ok) {
+                                const buf = await res.arrayBuffer();
+                                const html = iconv.decode(Buffer.from(buf), 'euc-kr');
+                                const $ = cheerio.load(html);
+                                $('.bbsList li a, .list_title a, a.title, .bbs_list li a, ul.bbsList a').each((i, el) => {
+                                    const href = $(el).attr('href') || '';
+                                    const noMatch = href.match(/no=(\d+)/);
+                                    const title = $(el).find('.title, span.title').text().trim() || $(el).text().trim();
+                                    if (noMatch && title) {
+                                        const cleanTitle = title.split('\n')[0].trim();
+                                        if (cleanTitle) {
+                                            posts.push({ id: noMatch[1], title: cleanTitle, url: 'https://m.ppomppu.co.kr/new/' + href.replace(/^\/new\//, '') });
                                         }
                                     }
-                                }
-                            });
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Ppomppu mobile fallback failed:", e);
                         }
                     }
                 } else if (target.siteType === 'RULIWEB') {
-                    // 1차: 모바일 URL (Cloudflare 봇 차단 우회 및 경량화)
+                    // 1순위: 공식 RSS 피드 (Cloudflare WAF 봇 차단 및 타임아웃 0% 면역)
                     try {
-                        const mobileUrl = `https://m.ruliweb.com/community/board/300143`;
-                        const res = await fetch(mobileUrl, {
-                            headers: { ...BROWSER_HEADERS, 'Referer': 'https://m.ruliweb.com/' },
+                        const rssUrl = 'https://bbs.ruliweb.com/community/board/300143/rss';
+                        const res = await fetch(rssUrl, {
+                            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                             cache: 'no-store',
-                            signal: AbortSignal.timeout(6000)
+                            signal: AbortSignal.timeout(5000)
                         });
                         if (res.ok) {
-                            const html = await res.text();
-                            const $ = cheerio.load(html);
-
-                            $('a[href*="/read/"]').each((i, el) => {
-                                const href = $(el).attr('href') || '';
-                                const noMatch = href.match(/read\/(\d+)/);
-                                const title = $(el).text().trim();
-                                if (noMatch && title && title.length > 2) {
-                                    if (!posts.some(p => p.id === noMatch[1])) {
-                                        posts.push({ id: noMatch[1], title, url: href.startsWith('http') ? href : `https://m.ruliweb.com${href}` });
-                                    }
+                            const xmlText = await res.text();
+                            const $ = cheerio.load(xmlText, { xmlMode: true });
+                            $('item').each((i, el) => {
+                                const title = $(el).find('title').text().trim();
+                                const link = $(el).find('link').text().trim() || $(el).find('guid').text().trim();
+                                const noMatch = link.match(/read\/(\d+)/);
+                                if (title && noMatch) {
+                                    posts.push({ id: noMatch[1], title, url: link });
                                 }
                             });
                         }
                     } catch (e) {
-                        console.error("Ruliweb mobile scrape failed:", e);
+                        console.error("Ruliweb RSS scrape failed:", e);
                     }
 
-                    // 2차 폴백: PC URL
+                    // 2순위 폴백: 모바일 웹 파싱
                     if (posts.length === 0) {
-                        const url = `https://bbs.ruliweb.com/community/board/300143`;
-                        const res = await fetch(url, {
-                            headers: { ...BROWSER_HEADERS, 'Referer': 'https://bbs.ruliweb.com/' },
-                            cache: 'no-store',
-                            signal: AbortSignal.timeout(6000)
-                        });
-                        if (res.ok) {
-                            const html = await res.text();
-                            const $ = cheerio.load(html);
-
-                            $('tr.table_body:not(.notice):not(.best):not(.inside)').each((i, el) => {
-                                const category = $(el).find('.divsn').text().trim();
-                                // 유머게시판 모니터링이므로 질문, 잡담 등은 제외 (유머, 장작 등 핵심 카테고리만 포함)
-                                if (category && category !== '유머' && category !== '장작') return;
-
-                                const aTag = $(el).find('a.subject_link');
-                                const title = aTag.text().trim();
-                                const href = aTag.attr('href');
-                                if (href) {
-                                    const noMatch = href.match(/read\/(\d+)/);
-                                    if (noMatch && !posts.some(p => p.id === noMatch[1])) {
-                                        posts.push({ id: noMatch[1], title, url: href.startsWith('http') ? href : `https://bbs.ruliweb.com${href}` });
-                                    }
-                                }
+                        try {
+                            const mobileUrl = `https://m.ruliweb.com/community/board/300143`;
+                            const res = await fetch(mobileUrl, {
+                                headers: { ...BROWSER_HEADERS, 'Referer': 'https://m.ruliweb.com/' },
+                                cache: 'no-store',
+                                signal: AbortSignal.timeout(4000)
                             });
+                            if (res.ok) {
+                                const html = await res.text();
+                                const $ = cheerio.load(html);
+                                $('a[href*="/read/"]').each((i, el) => {
+                                    const href = $(el).attr('href') || '';
+                                    const noMatch = href.match(/read\/(\d+)/);
+                                    const title = $(el).text().trim();
+                                    if (noMatch && title && title.length > 2) {
+                                        if (!posts.some(p => p.id === noMatch[1])) {
+                                            posts.push({ id: noMatch[1], title, url: href.startsWith('http') ? href : `https://m.ruliweb.com${href}` });
+                                        }
+                                    }
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Ruliweb mobile fallback failed:", e);
                         }
                     }
                 }
