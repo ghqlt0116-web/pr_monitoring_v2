@@ -91,17 +91,39 @@ export async function POST() {
                         }
                     }
                 } else if (target.siteType === 'RULIWEB') {
-                    const ruliwebUrls = [
-                        'https://m.ruliweb.com/community/board/300143/list',
-                        'https://m.ruliweb.com/best/humor_only/now',
-                        'https://bbs.ruliweb.com/community/board/300143/rss'
+                    const ruliwebConfigs: { url: string; headers: Record<string, string> }[] = [
+                        {
+                            url: 'https://m.ruliweb.com/community/board/300143/list',
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-S928N Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.6367.179 Mobile Safari/537.36 RuliwebApp',
+                                'X-Requested-With': 'com.ruliweb.app',
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                'Accept-Language': 'ko-KR,ko;q=0.9',
+                                'Referer': 'https://m.ruliweb.com/'
+                            }
+                        },
+                        {
+                            url: 'https://m.ruliweb.com/best/humor_only/now',
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.179 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                'Accept-Language': 'ko-KR,ko;q=0.9'
+                            }
+                        },
+                        {
+                            url: 'https://bbs.ruliweb.com/community/board/300143/rss',
+                            headers: {
+                                'User-Agent': 'Daumoa 4.0; Mobile (compatible; Daumoa/4.0; +http://top.daum.net/cgi-bin/bottom/bottom.cgi?top_sub=etc&bottom_sub=oa)',
+                                'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+                            }
+                        }
                     ];
 
-                    for (const url of ruliwebUrls) {
+                    for (const conf of ruliwebConfigs) {
                         if (posts.length >= 10) break;
                         try {
-                            const res = await fetch(url, {
-                                headers: { ...BROWSER_HEADERS, 'Referer': 'https://m.ruliweb.com/' },
+                            const res = await fetch(conf.url, {
+                                headers: conf.headers,
                                 cache: 'no-store',
                                 signal: AbortSignal.timeout(4000)
                             });
@@ -138,7 +160,7 @@ export async function POST() {
 
                             if (posts.length > 0) break;
                         } catch (e) {
-                            console.error(`Ruliweb scrape failed for ${url}:`, e);
+                            console.error(`Ruliweb scrape failed for ${conf.url}:`, e);
                         }
                     }
                 }
