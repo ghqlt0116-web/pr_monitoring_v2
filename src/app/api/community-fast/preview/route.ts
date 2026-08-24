@@ -115,9 +115,21 @@ export async function GET(req: Request) {
                         cache: 'no-store',
                         signal: AbortSignal.timeout(4000)
                     });
-                    if (!res.ok) continue;
+
+                    const cfRay = res.headers.get('cf-ray') || 'none';
+                    const cfMitigated = res.headers.get('cf-mitigated') || 'none';
+                    const contentType = res.headers.get('content-type') || 'none';
+
+                    console.log(`[Ruliweb Preview] URL: ${conf.url} | Status: ${res.status} ${res.statusText} | cf-ray: ${cfRay} | cf-mitigated: ${cfMitigated} | content-type: ${contentType}`);
 
                     const text = await res.text();
+                    const snippet = text.substring(0, 200).replace(/\s+/g, ' ');
+                    console.log(`[Ruliweb Preview] Body snippet (200 chars): ${snippet}`);
+
+                    if (!res.ok) {
+                        console.warn(`[Ruliweb Preview] Non-200 status for ${conf.url}: ${res.status}`);
+                        continue;
+                    }
 
                     // Case 1: HTML Page (모바일 전용 최신 목록 파싱)
                     const $ = cheerio.load(text);
@@ -146,9 +158,10 @@ export async function GET(req: Request) {
                         });
                     }
 
+                    console.log(`[Ruliweb Preview] Extracted ${posts.length} posts from ${conf.url}`);
                     if (posts.length > 0) break;
-                } catch (e) {
-                    console.error(`Ruliweb fetch failed for ${conf.url}:`, e);
+                } catch (e: any) {
+                    console.error(`[Ruliweb Preview] Fetch exception for ${conf.url}:`, e?.message || e);
                 }
             }
         }
