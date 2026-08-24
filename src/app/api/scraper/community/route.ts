@@ -3,7 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { containsKeyword } from '@/lib/creatorAnalyze';
 import { sendTelegramAlert, sendTelegramSummary } from '@/lib/telegram';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
+export async function GET() {
+    return POST();
+}
 
 export async function POST() {
     try {
@@ -52,7 +57,8 @@ export async function POST() {
                 // RSS 데이터 긁어오기 (iframe 렌더링, 봇 차단을 모두 완벽히 회피)
                 const res = await fetch(parsedUrl, {
                     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0 Safari/537.36' },
-                    next: { revalidate: 0 }
+                    next: { revalidate: 0 },
+                    signal: AbortSignal.timeout(8000)
                 });
 
                 if (!res.ok) {
@@ -165,8 +171,8 @@ export async function POST() {
                 errorCount++;
             }
 
-            // [IP 차단 방지] 각 블로그/커뮤니티 타겟을 긁은 후, 무조건 1.5초(1500ms) 대기하여 호스트 서버 과부하 및 Vercel Timeout 방어
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // [IP 차단 방지] 각 블로그/커뮤니티 타겟을 긁은 후 300ms 대기하여 서버리스 타임아웃 방어
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
 
         const summaryMsg = `✅ [모니터링 완료] 외부 커뮤니티\n- 정상 작동: ${successCount}개 사이트\n- 접속 에러: ${errorCount}개 사이트\n- 새로 업데이트: ${newPostsCount}개 게시물\n🖥️ 시스템 대시보드: ${siteUrl}`;

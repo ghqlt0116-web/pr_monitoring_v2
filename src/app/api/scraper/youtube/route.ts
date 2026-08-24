@@ -35,6 +35,13 @@ function parseRelativeDate(text: string): Date {
     return now;
 }
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
+export async function GET() {
+    return POST();
+}
+
 export async function POST(req?: Request) {
     try {
         const body = req ? await req.json().catch(() => ({})) : {};

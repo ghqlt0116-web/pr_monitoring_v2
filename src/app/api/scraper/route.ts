@@ -16,6 +16,13 @@ const CONFIG: Record<string, { type: 'SBS_API' | 'KBS_API' | 'MBC_HTML', id?: st
   '탐사기획 스트레이트': { type: 'MBC_HTML', id: '1003647100000100000' },
 };
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
+export async function GET() {
+  return POST();
+}
+
 export async function POST(req?: Request) {
   try {
     const body = req ? await req.json().catch(() => ({})) : {};
