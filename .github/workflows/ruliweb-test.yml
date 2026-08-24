@@ -1,0 +1,24 @@
+name: Ruliweb Connection Test
+
+on:
+  workflow_dispatch: # Actions 탭에서 수동 실행
+
+jobs:
+  test-connection:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test Default curl -I (Headers only)
+        run: |
+          echo "=== 1. 기본 curl -I 요청 ==="
+          curl -I -v https://bbs.ruliweb.com/community/board/300143/list || true
+
+      - name: Test curl with User-Agent
+        run: |
+          echo "=== 2. 일반 브라우저 User-Agent 포함 curl -I 요청 ==="
+          curl -I -v -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" https://bbs.ruliweb.com/community/board/300143/list || true
+
+      - name: Test Response Body Sample
+        run: |
+          echo "=== 3. 응답 본문 첫 500자 확인 (Cloudflare/WAF 차단 여부 체크) ==="
+          curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" https://bbs.ruliweb.com/community/board/300143/list | head -c 500 || true
