@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import * as cheerio from 'cheerio';
 import { sendTelegramAlert } from '@/lib/telegram';
+import { setLatestRuliwebPosts } from '@/lib/ruliwebCache';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { html } = body;
+        const { html, testAlert } = body;
 
         if (!html || typeof html !== 'string') {
             return NextResponse.json({ error: 'Invalid body: "html" string is required' }, { status: 400 });
@@ -68,9 +69,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ 
                 success: true, 
                 message: 'HTML parsed, but no posts found (Check if Cloudflare block page was sent)',
-                parsedCount: 0 
+                parsedCount: 0,
+                posts: []
             });
         }
+
+        // 최신 파싱 데이터 캐시에 저장 (대시보드 미리보기용)
+        setLatestRuliwebPosts(posts);
 
         // 3. 타겟 및 키워드 조회
         const targets = await (prisma as any).realtimeCommunityTarget.findMany({ 
@@ -80,62 +85,68 @@ export async function POST(req: Request) {
             where: { isActive: true } 
         });
 
-        if (targets.length === 0 || keywords.length === 0) {
-            return NextResponse.json({ 
-                success: true, 
-                message: 'Parsed successfully, but no active RULIWEB target or keywords configured',
-                parsedCount: posts.length 
-            });
+        let totalNewAlerts = 0;
+        const matchedAlertLogs: string[] = [];
+
+        // 수동 테스트 알림 요청이 있는 경우 (testAlert === true)
+        if (testAlert && posts.length > 0) {
+            const samplePost = posts[0];
+            const testMsg = `🧪 [루리웹 텔레그램 연동 테스트 성공]\n- 제목: ${samplePost.title}\n- 링크: ${samplePost.url}\n- 상태: GitHub Actions ➔ Vercel ➔ 텔레그램 연동 정상 작동`;
+            await sendTelegramAlert(testMsg);
+            matchedAlertLogs.push(`[테스트 알림 발송 완료] ${samplePost.title}`);
+            totalNewAlerts++;
         }
 
-        let totalNewAlerts = 0;
+        if (targets.length > 0 && keywords.length > 0) {
+            for (const target of targets) {
+                const maxScrapedId = target.lastScrapedPostId || '0';
+                const parsedMaxId = parseInt(maxScrapedId, 10) || 0;
+                let newMaxId = maxScrapedId;
 
-        for (const target of targets) {
-            const maxScrapedId = target.lastScrapedPostId || '0';
-            const parsedMaxId = parseInt(maxScrapedId, 10) || 0;
-            let newMaxId = maxScrapedId;
+                for (const post of posts) {
+                    const currentPostId = parseInt(post.id, 10) || 0;
+                    if (currentPostId > parsedMaxId) {
+                        // 키워드 매칭 검사
+                        let matchedKeywords: string[] = [];
+                        for (const kwObj of keywords) {
+                            if (checkKeywordMatch(post.title, kwObj.keyword)) {
+                                matchedKeywords.push(kwObj.keyword);
+                            }
+                        }
 
-            // 최신 글부터 검사 (ID 기준 오름차순/내림차순 정렬 대응)
-            for (const post of posts) {
-                const currentPostId = parseInt(post.id, 10) || 0;
-                if (currentPostId > parsedMaxId) {
-                    // 키워드 매칭 검사
-                    let matchedKeywords: string[] = [];
-                    for (const kwObj of keywords) {
-                        if (checkKeywordMatch(post.title, kwObj.keyword)) {
-                            matchedKeywords.push(kwObj.keyword);
+                        if (matchedKeywords.length > 0) {
+                            const keywordDisplay = matchedKeywords.map(k => 
+                                k.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')
+                            ).join(' | ');
+                            const alertMsg = `🚨 [키워드 감지] ${target.siteName}\n- 키워드: ${keywordDisplay}\n- 제목: ${post.title}\n- 링크: ${post.url}`;
+                            await sendTelegramAlert(alertMsg);
+                            matchedAlertLogs.push(`[키워드 매칭: ${keywordDisplay}] ${post.title}`);
+                            totalNewAlerts++;
+                        }
+
+                        const currentNewMax = parseInt(newMaxId, 10) || 0;
+                        if (currentPostId > currentNewMax) {
+                            newMaxId = post.id;
                         }
                     }
-
-                    if (matchedKeywords.length > 0) {
-                        const keywordDisplay = matchedKeywords.map(k => 
-                            k.replace(/\+/g, ' + ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')
-                        ).join(' | ');
-                        const alertMsg = `🚨 [키워드 감지] ${target.siteName}\n- 키워드: ${keywordDisplay}\n- 제목: ${post.title}\n- 링크: ${post.url}`;
-                        await sendTelegramAlert(alertMsg);
-                        totalNewAlerts++;
-                    }
-
-                    const currentNewMax = parseInt(newMaxId, 10) || 0;
-                    if (currentPostId > currentNewMax) {
-                        newMaxId = post.id;
-                    }
                 }
-            }
 
-            // 최근 스크랩 ID 갱신
-            if (newMaxId !== maxScrapedId) {
-                await (prisma as any).realtimeCommunityTarget.update({
-                    where: { id: target.id },
-                    data: { lastScrapedPostId: newMaxId }
-                });
+                // 최근 스크랩 ID 갱신
+                if (newMaxId !== maxScrapedId) {
+                    await (prisma as any).realtimeCommunityTarget.update({
+                        where: { id: target.id },
+                        data: { lastScrapedPostId: newMaxId }
+                    });
+                }
             }
         }
 
         return NextResponse.json({
             success: true,
             parsedCount: posts.length,
-            alertsSent: totalNewAlerts
+            alertsSent: totalNewAlerts,
+            alertLogs: matchedAlertLogs,
+            posts: posts.slice(0, 10) // 최신 파싱된 10건 반환 (로그 및 미리보기용)
         });
 
     } catch (error: any) {

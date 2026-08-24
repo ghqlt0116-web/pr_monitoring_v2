@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import iconv from 'iconv-lite';
+import { getLatestRuliwebPosts } from '@/lib/ruliwebCache';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -14,8 +15,6 @@ const BROWSER_HEADERS = {
 };
 
 export async function GET(req: Request) {
-    console.log('[Region Check] VERCEL_REGION:', process.env.VERCEL_REGION);
-
     const { searchParams } = new URL(req.url);
     const siteType = searchParams.get('siteType');
 
@@ -80,11 +79,20 @@ export async function GET(req: Request) {
                     console.error("Ppomppu mobile preview fallback failed:", e);
                 }
             }
+            return NextResponse.json(posts);
+
         } else if (siteType === 'RULIWEB') {
-            // 루리웹은 Vercel 환경에서 직접 접근 시 차단되므로 GitHub Actions 릴레이가 수집을 전담합니다.
+            // 루리웹은 GitHub Actions 릴레이가 수집하여 보관 중인 최신 파싱 데이터 반환
+            const { posts: cachedPosts, lastIngestedAt } = getLatestRuliwebPosts();
+
+            if (cachedPosts && cachedPosts.length > 0) {
+                return NextResponse.json(cachedPosts.slice(0, 10));
+            }
+
+            // 아직 릴레이가 한 번도 실행되지 않은 경우 안내 반환
             return NextResponse.json({
                 isRelay: true,
-                message: '루리웹은 Vercel IP 차단 우회를 위해 GitHub Actions 릴레이를 통해 30분마다 자동 수집됩니다. GitHub 저장소의 Actions 탭에서 수동 실행(Run workflow)하여 즉시 테스트할 수 있습니다.'
+                message: '루리웹은 GitHub Actions 릴레이를 통해 안전하게 수집됩니다. GitHub Actions에서 [Run workflow]를 1회 실행하시면 즉시 최신 게시글 10건이 이곳에 표시됩니다.'
             });
         }
 

@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: '*/30 * * * *' # 매 30분마다 자동 실행
   workflow_dispatch: # 수동 실행 트리거
+    inputs:
+      test_alert:
+        description: '텔레그램 테스트 알림도 함께 발송하시겠습니까? (true/false)'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   relay-ruliweb:
@@ -12,7 +18,9 @@ jobs:
     steps:
       - name: Fetch Ruliweb HTML
         run: |
-          echo "=== 1. 루리웹 HTML 다운로드 시작 ==="
+          echo "=========================================="
+          echo "📥 [1단계] 루리웹 HTML 다운로드 시작"
+          echo "=========================================="
           curl -s -L \
             -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
             "https://bbs.ruliweb.com/community/board/300143/list" \
@@ -22,30 +30,35 @@ jobs:
           echo "HTML 파일 다운로드 완료 (크기: ${FILE_SIZE} bytes)"
 
           if [ "$FILE_SIZE" -lt 500 ]; then
-            echo "::error::HTML 파일 크기가 너무 작습니다. 다운로드에 실패했거나 차단되었을 수 있습니다."
+            echo "::error::HTML 파일 크기가 너무 작습니다. 루리웹 차단 여부를 확인하세요."
             cat ruliweb.html
             exit 1
           fi
 
-      - name: Send HTML Payload to Vercel Endpoint
+      - name: Send HTML Payload to Vercel & Check Parsing
         env:
           INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
           VERCEL_ENDPOINT_URL: ${{ secrets.VERCEL_ENDPOINT_URL }}
+          TEST_ALERT: ${{ github.event.inputs.test_alert || 'false' }}
         run: |
-          echo "=== 2. JSON 페이로드 생성 및 Vercel 전송 ==="
+          echo "=========================================="
+          echo "🚀 [2단계] Vercel Ingest 엔드포인트로 HTML 전송"
+          echo "=========================================="
           if [ -z "$INGEST_SECRET" ] || [ -z "$VERCEL_ENDPOINT_URL" ]; then
             echo "::error::GitHub Secrets에 INGEST_SECRET 또는 VERCEL_ENDPOINT_URL이 설정되지 않았습니다."
             exit 1
           fi
 
-          # HTML 내용을 안전하게 JSON 포맷으로 패키징
-          jq -n --rawfile html ruliweb.html '{"html": $html}' > payload.json
+          # HTML 및 옵션을 JSON으로 변환
+          jq -n \
+            --rawfile html ruliweb.html \
+            --argjson testAlert "$TEST_ALERT" \
+            '{"html": $html, "testAlert": $testAlert}' > payload.json
 
-          # 끝의 슬래시(/) 제거 처리
           TARGET_URL="${VERCEL_ENDPOINT_URL%/}/api/scraper/ruliweb-ingest"
-          echo "전송 대상 URL: $TARGET_URL"
+          echo "전송 대상 엔드포인트: $TARGET_URL"
 
-          # Vercel Ingest 엔드포인트로 POST 요청 전송
+          # Vercel 엔드포인트 호출
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "$TARGET_URL" \
             -H "Content-Type: application/json" \
             -H "X-Ingest-Secret: $INGEST_SECRET" \
@@ -54,12 +67,24 @@ jobs:
           HTTP_BODY=$(echo "$RESPONSE" | sed -e '$d')
           HTTP_STATUS=$(echo "$RESPONSE" | tail -n1 | sed -e 's/HTTP_STATUS://')
 
-          echo "응답 상태 코드: $HTTP_STATUS"
-          echo "응답 본문: $HTTP_BODY"
+          echo "HTTP 응답 상태 코드: $HTTP_STATUS"
 
           if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "::error::Vercel Ingest 엔드포인트 요청 실패 (HTTP $HTTP_STATUS)"
+            echo "::error::Vercel Ingest 요청 실패 (HTTP $HTTP_STATUS)"
+            echo "응답 에러 메시지: $HTTP_BODY"
             exit 1
           fi
 
-          echo "=== 루리웹 릴레이 완료 ==="
+          echo "=========================================="
+          echo "✅ [3단계] 루리웹 파싱 및 알림 처리 결과"
+          echo "=========================================="
+          echo "$HTTP_BODY" | jq .
+
+          echo "------------------------------------------"
+          echo "📋 실제 추출된 최신 게시글 목록 (최근 10건):"
+          echo "------------------------------------------"
+          echo "$HTTP_BODY" | jq -r '.posts[]? | "• [ID: " + .id + "] " + .title + " (" + .url + ")"'
+
+          echo "=========================================="
+          echo "🎉 루리웹 릴레이 및 텔레그램 검사 성공 완료!"
+          echo "=========================================="
