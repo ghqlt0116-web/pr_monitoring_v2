@@ -20,6 +20,8 @@ export async function GET() {
 }
 
 export async function POST() {
+    console.log('[Region Check] VERCEL_REGION:', process.env.VERCEL_REGION);
+
     try {
         const targets = await (prisma as any).realtimeCommunityTarget.findMany({ where: { isActive: true } });
         const keywords = await (prisma as any).realtimeKeyword.findMany({ where: { isActive: true } });
@@ -125,7 +127,7 @@ export async function POST() {
                             const res = await fetch(conf.url, {
                                 headers: conf.headers,
                                 cache: 'no-store',
-                                signal: AbortSignal.timeout(4000)
+                                signal: AbortSignal.timeout(15000)
                             });
 
                             const cfRay = res.headers.get('cf-ray') || 'none';
