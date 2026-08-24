@@ -81,91 +81,11 @@ export async function GET(req: Request) {
                 }
             }
         } else if (siteType === 'RULIWEB') {
-            const ruliwebConfigs: { url: string; headers: Record<string, string> }[] = [
-                {
-                    url: 'https://m.ruliweb.com/community/board/300143/list',
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-S928N Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.6367.179 Mobile Safari/537.36 RuliwebApp',
-                        'X-Requested-With': 'com.ruliweb.app',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'Accept-Language': 'ko-KR,ko;q=0.9',
-                        'Referer': 'https://m.ruliweb.com/'
-                    }
-                },
-                {
-                    url: 'https://m.ruliweb.com/best/humor_only/now',
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.6367.179 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'Accept-Language': 'ko-KR,ko;q=0.9'
-                    }
-                },
-                {
-                    url: 'https://bbs.ruliweb.com/community/board/300143/rss',
-                    headers: {
-                        'User-Agent': 'Daumoa 4.0; Mobile (compatible; Daumoa/4.0; +http://top.daum.net/cgi-bin/bottom/bottom.cgi?top_sub=etc&bottom_sub=oa)',
-                        'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-                    }
-                }
-            ];
-
-            for (const conf of ruliwebConfigs) {
-                if (posts.length >= 10) break;
-                try {
-                    const res = await fetch(conf.url, {
-                        headers: conf.headers,
-                        cache: 'no-store',
-                        signal: AbortSignal.timeout(15000)
-                    });
-
-                    const cfRay = res.headers.get('cf-ray') || 'none';
-                    const cfMitigated = res.headers.get('cf-mitigated') || 'none';
-                    const contentType = res.headers.get('content-type') || 'none';
-
-                    console.log(`[Ruliweb Preview] URL: ${conf.url} | Status: ${res.status} ${res.statusText} | cf-ray: ${cfRay} | cf-mitigated: ${cfMitigated} | content-type: ${contentType}`);
-
-                    const text = await res.text();
-                    const snippet = text.substring(0, 200).replace(/\s+/g, ' ');
-                    console.log(`[Ruliweb Preview] Body snippet (200 chars): ${snippet}`);
-
-                    if (!res.ok) {
-                        console.warn(`[Ruliweb Preview] Non-200 status for ${conf.url}: ${res.status}`);
-                        continue;
-                    }
-
-                    // Case 1: HTML Page (모바일 전용 최신 목록 파싱)
-                    const $ = cheerio.load(text);
-                    $('.list_body a.subject, .list_body a.title, a.subject, a.title, .board_list a, a.subject_link, a[href*="/read/"]').each((i, el) => {
-                        if (posts.length >= 10) return;
-                        const href = $(el).attr('href') || '';
-                        const noMatch = href.match(/read\/(\d+)/);
-                        const title = $(el).text().trim();
-                        if (noMatch && title && title.length > 1 && !posts.some(p => p.id === noMatch[1])) {
-                            const cleanTitle = title.replace(/\s+/g, ' ').replace(/\(\d+\)$/, '').trim();
-                            posts.push({ id: noMatch[1], title: cleanTitle, url: href.startsWith('http') ? href : `https://m.ruliweb.com${href}` });
-                        }
-                    });
-
-                    // Case 2: RSS XML Fallback
-                    if (posts.length === 0 && (text.includes('<rss') || text.includes('<item>')) ) {
-                        const $xml = cheerio.load(text, { xmlMode: true });
-                        $xml('item').each((i, el) => {
-                            if (posts.length >= 10) return;
-                            const title = $xml(el).find('title').text().trim();
-                            const link = $xml(el).find('link').text().trim() || $xml(el).find('guid').text().trim();
-                            const noMatch = link.match(/read\/(\d+)/);
-                            if (title && noMatch && !posts.some(p => p.id === noMatch[1])) {
-                                posts.push({ id: noMatch[1], title: title.replace(/\s+/g, ' '), url: link });
-                            }
-                        });
-                    }
-
-                    console.log(`[Ruliweb Preview] Extracted ${posts.length} posts from ${conf.url}`);
-                    if (posts.length > 0) break;
-                } catch (e: any) {
-                    console.error(`[Ruliweb Preview] Fetch exception for ${conf.url}:`, e?.message || e);
-                }
-            }
+            // 루리웹은 Vercel 환경에서 직접 접근 시 차단되므로 GitHub Actions 릴레이가 수집을 전담합니다.
+            return NextResponse.json({
+                isRelay: true,
+                message: '루리웹은 Vercel IP 차단 우회를 위해 GitHub Actions 릴레이를 통해 30분마다 자동 수집됩니다. GitHub 저장소의 Actions 탭에서 수동 실행(Run workflow)하여 즉시 테스트할 수 있습니다.'
+            });
         }
 
         return NextResponse.json(posts);

@@ -51,8 +51,10 @@ export default function CommunityFastDashboard() {
             if (data.error) {
                 alert("불러오기 실패: " + data.error);
                 setPreviewSite(null);
+            } else if (data.isRelay) {
+                setPreviewData([data]);
             } else {
-                setPreviewData(data);
+                setPreviewData(Array.isArray(data) ? data : []);
             }
         } catch(e: any) {
             alert("통신 오류: " + e.message);
@@ -215,16 +217,28 @@ export default function CommunityFastDashboard() {
                                     </div>
                                 ) : previewData.length === 0 ? (
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>게시글을 가져오지 못했습니다.</p>
+                                ) : previewData[0]?.isRelay ? (
+                                    <div style={{ padding: '1.2rem', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px' }}>
+                                        <p style={{ color: '#93c5fd', margin: 0, fontSize: '0.9rem', lineHeight: '1.6' }}>
+                                            💡 <strong>GitHub Actions 릴레이 자동수집 대상</strong><br/>
+                                            {previewData[0].message}
+                                        </p>
+                                        <div style={{ marginTop: '0.8rem' }}>
+                                            <a href="https://github.com/ghqlt0116-web/pr_monitoring_v2/actions" target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontSize: '0.85rem', textDecoration: 'underline' }}>
+                                                👉 GitHub Actions에서 수동 실행 및 로그 확인하기
+                                            </a>
+                                        </div>
+                                    </div>
                                 ) : (
                                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                                         {previewData.map((p, i) => (
-                                            <li key={i} style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }}>
-                                                <span style={{ color: '#f59e0b', marginRight: '0.5rem', display: 'inline-block', minWidth: '80px' }}>[ID: {p.id}]</span>
-                                                <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }} className={styles.navItem}>{p.title}</a>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
+                                             <li key={i} style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }}>
+                                                 <span style={{ color: '#f59e0b', marginRight: '0.5rem', display: 'inline-block', minWidth: '80px' }}>[ID: {p.id}]</span>
+                                                 <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }} className={styles.navItem}>{p.title}</a>
+                                             </li>
+                                         ))}
+                                     </ul>
+                                 )}
                             </div>
                         )}
                     </section>
