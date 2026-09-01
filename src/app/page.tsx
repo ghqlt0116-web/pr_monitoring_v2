@@ -5,7 +5,7 @@ import { RefreshCw, AlertTriangle, ScreenShare, ShieldAlert, MonitorPlay, Activi
 import styles from './page.module.css';
 
 export default function Dashboard() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'risk' | 'settings'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
   const [episodes, setEpisodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
@@ -211,9 +211,6 @@ export default function Dashboard() {
             <div className={styles.subNav}>
               <a href="#" className={`${styles.navItem} ${currentView === 'dashboard' ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); setCurrentView('dashboard'); }}>
                 <Activity size={18} /> 모니터링 결과
-              </a>
-              <a href="#" className={`${styles.navItem} ${currentView === 'risk' ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); setCurrentView('risk'); }}>
-                <ShieldAlert size={18} /> 리스크 관리
               </a>
               <a href="#" className={`${styles.navItem} ${currentView === 'settings' ? styles.active : ''}`} onClick={(e) => { e.preventDefault(); setCurrentView('settings'); }}>
                 <ScreenShare size={18} /> 모니터링 설정
@@ -450,36 +447,6 @@ export default function Dashboard() {
               )}
             </section>
           </>
-        )}
-
-        {currentView === 'risk' && (
-          <section className={`animate-fade-in ${styles.listSection}`}>
-            <div className={styles.listHeader}>
-              <h3>위험도(상/중) 집중 관리</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>통신, 망사용료, SK 관련 키워드가 포함된 에피소드만 필터링하여 보여줍니다.</p>
-            </div>
-            <div className={styles.grid} style={{ marginTop: '1rem' }}>
-              {episodes.filter(e => e.riskLevel === '상' || e.riskLevel === '중').map(ep => (
-                <article key={ep.id} className={`glass-panel ${styles.card}`} style={{ border: `1px solid ${getRiskColor(ep.riskLevel)}` }}>
-                  <div className={styles.cardHeader}>
-                    <span className={styles.channelLabel}>{ep.program?.channel}</span>
-                    <span className={styles.programTitle}>{ep.program?.title}</span>
-                    <span className={styles.riskBadge} style={{ borderColor: getRiskColor(ep.riskLevel), color: getRiskColor(ep.riskLevel) }}>리스크 {ep.riskLevel}</span>
-                  </div>
-                  <div className={styles.cardBody}>
-                    <h4 className={styles.epTitle}>{ep.title}</h4>
-                    <p className={styles.aiText} style={{ color: getRiskColor(ep.riskLevel), fontWeight: 600, margin: '1rem 0' }}>{ep.summary}</p>
-                    <button className={styles.editBtn} style={{ background: 'var(--accent-brand)' }}>대응 현황 보고서 작성</button>
-                  </div>
-                </article>
-              ))}
-              {episodes.filter(e => e.riskLevel === '상' || e.riskLevel === '중').length === 0 && (
-                <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', gridColumn: '1 / -1' }}>
-                  현재 감지된 고위험 시사 프로그램이 없습니다. 지속적으로 모니터링 중입니다.
-                </div>
-              )}
-            </div>
-          </section>
         )}
 
         {currentView === 'settings' && (
