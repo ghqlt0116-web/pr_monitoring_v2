@@ -253,7 +253,7 @@ export default function Dashboard() {
               <p className={styles.subtitle} style={{ margin: 0 }}>공중파/종편 리스크 실시간 추적 대시보드</p>
               {lastUpdated && (
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Clock size={14} /> 6시간 자동 업데이트 | 최근 업데이트: {lastUpdated.toLocaleString()}
+                  <Clock size={14} /> 최근 업데이트: {lastUpdated.toLocaleString()}
                 </span>
               )}
             </div>

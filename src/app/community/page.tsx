@@ -11,6 +11,7 @@ export default function CommunityDashboard() {
     const [keywords, setKeywords] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [scraping, setScraping] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [analyzingId, setAnalyzingId] = useState<number | null>(null);
     const [expandedSummaryIds, setExpandedSummaryIds] = useState<Set<number>>(new Set());
 
@@ -38,6 +39,7 @@ export default function CommunityDashboard() {
             setPosts(Array.isArray(pData) ? pData : []);
             setTargets(Array.isArray(tData) ? tData : []);
             setKeywords(Array.isArray(kData) ? kData : []);
+            setLastUpdated(new Date());
         } catch (e) {
             console.error(e);
         } finally {
@@ -268,9 +270,11 @@ export default function CommunityDashboard() {
                         <h2 className={styles.pageTitle}>블로그 모니터링</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
                             <p className={styles.subtitle} style={{ margin: 0 }}>블로그/커뮤니티 리스크 실시간 추적 대시보드</p>
-                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                <Clock size={14} /> 6시간 자동 업데이트 | 최근 업데이트 자동 로드됨
-                            </span>
+                            {lastUpdated && (
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <Clock size={14} /> 최근 업데이트: {lastUpdated.toLocaleString()}
+                                </span>
+                            )}
                         </div>
                     </div>
 
