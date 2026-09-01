@@ -39,7 +39,16 @@ export default function CommunityDashboard() {
             setPosts(Array.isArray(pData) ? pData : []);
             setTargets(Array.isArray(tData) ? tData : []);
             setKeywords(Array.isArray(kData) ? kData : []);
-            setLastUpdated(new Date());
+
+            // 실제 DB에 저장된 크롤링 시점 계산
+            const allTimestamps = [
+                ...(Array.isArray(tData) ? tData.map((t: any) => t.lastScrapedAt ? new Date(t.lastScrapedAt).getTime() : 0) : []),
+                ...(Array.isArray(pData) ? pData.map((p: any) => p.createdAt ? new Date(p.createdAt).getTime() : 0) : [])
+            ].filter((t: number) => t > 0);
+
+            if (allTimestamps.length > 0) {
+                setLastUpdated(new Date(Math.max(...allTimestamps)));
+            }
         } catch (e) {
             console.error(e);
         } finally {

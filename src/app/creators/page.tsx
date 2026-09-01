@@ -40,7 +40,16 @@ export default function CreatorsDashboard() {
             setVideos(Array.isArray(vidData) ? vidData : []);
             setChannels(Array.isArray(chData) ? chData : []);
             setKeywords(Array.isArray(kwData) ? kwData : []);
-            setLastUpdated(new Date());
+
+            // 실제 DB에 저장된 크롤링 시점 계산
+            const allTimestamps = [
+                ...(Array.isArray(chData) ? chData.map((c: any) => c.lastScrapedAt ? new Date(c.lastScrapedAt).getTime() : 0) : []),
+                ...(Array.isArray(vidData) ? vidData.map((v: any) => v.scrapedAt ? new Date(v.scrapedAt).getTime() : 0) : [])
+            ].filter((t: number) => t > 0);
+
+            if (allTimestamps.length > 0) {
+                setLastUpdated(new Date(Math.max(...allTimestamps)));
+            }
         } catch (e) {
             console.error(e);
         } finally {

@@ -98,7 +98,14 @@ export default function Dashboard() {
         });
 
         setEpisodes(filteredData);
-        setLastUpdated(new Date());
+        // DB에 저장된 실제 크롤링 시점 계산
+        const epTimestamps = filteredData.map((e: any) => e.scrapedAt ? new Date(e.scrapedAt).getTime() : 0).filter((t: number) => t > 0);
+        if (epTimestamps.length > 0) {
+          setLastUpdated(prev => {
+            const maxEp = Math.max(...epTimestamps);
+            return prev ? new Date(Math.max(prev.getTime(), maxEp)) : new Date(maxEp);
+          });
+        }
       } else {
         console.error('API Error:', data);
         setEpisodes([]);
@@ -123,7 +130,17 @@ export default function Dashboard() {
     try {
       const res = await fetch('/api/programs', { cache: 'no-store' });
       const data = await res.json();
-      setPrograms(Array.isArray(data) ? data : []);
+      const progList = Array.isArray(data) ? data : [];
+      setPrograms(progList);
+
+      // 프로그램들의 실제 마지막 스크랩 시점 반영
+      const progTimestamps = progList.map((p: any) => p.lastScrapedAt ? new Date(p.lastScrapedAt).getTime() : 0).filter((t: number) => t > 0);
+      if (progTimestamps.length > 0) {
+        setLastUpdated(prev => {
+          const maxProg = Math.max(...progTimestamps);
+          return prev ? new Date(Math.max(prev.getTime(), maxProg)) : new Date(maxProg);
+        });
+      }
     } catch (e) { console.error(e); }
   };
 
