@@ -16,6 +16,7 @@ model Program {
   createdAt        DateTime  @default(now())
   
   // Scraping status
+  isActive         Boolean   @default(true) // 모니터링 활성화/제외 여부 (종영 등)
   lastScrapedAt    DateTime?
   lastScrapeStatus String?   // 'SUCCESS' or 'ERROR'
   lastScrapeError  String?

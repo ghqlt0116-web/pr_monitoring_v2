@@ -7,8 +7,7 @@ const PROGRAMS = [
     { channel: 'SBS', title: '궁금한 이야기 Y', url: 'https://programs.sbs.co.kr/culture/cube/boards/54659' },
     { channel: 'MBC', title: 'PD수첩', url: 'https://program.imbc.com/board/pdnote/6182' },
     { channel: 'MBC', title: '탐사기획 스트레이트', url: 'https://program.imbc.com/straight' },
-    { channel: 'KBS', title: '시사기획 창', url: 'https://program.kbs.co.kr/1tv/culture/window/pc/board.html?smenu=c8144b' },
-    { channel: 'KBS', title: '더 보다', url: 'https://program.kbs.co.kr/1tv/culture/theboda/pc/board.html?smenu=a9d602' }
+    { channel: 'KBS', title: '시사기획 창', url: 'https://program.kbs.co.kr/1tv/culture/window/pc/board.html?smenu=c8144b' }
 ];
 
 async function ensureSeed() {

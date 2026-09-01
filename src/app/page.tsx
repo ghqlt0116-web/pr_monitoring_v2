@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { RefreshCw, AlertTriangle, ScreenShare, ShieldAlert, MonitorPlay, Activity, Clock, Save, Youtube, Globe, LayoutDashboard, Plus, X } from 'lucide-react';
+import { RefreshCw, AlertTriangle, ScreenShare, ShieldAlert, MonitorPlay, Activity, Clock, Save, Youtube, Globe, LayoutDashboard, Plus, X, CheckCircle2, AlertCircle, Ban, RotateCcw } from 'lucide-react';
 import styles from './page.module.css';
 
 export default function Dashboard() {
@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [scraping, setScraping] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [programs, setPrograms] = useState<any[]>([]);
+  const [dismissedStaleIds, setDismissedStaleIds] = useState<Set<string>>(new Set());
 
   // Settings State
   const [highKeywords, setHighKeywords] = useState<string[]>([]);
@@ -142,6 +143,22 @@ export default function Dashboard() {
     }
   };
 
+  const handleToggleProgram = async (id: string, isActive: boolean) => {
+    try {
+      const res = await fetch('/api/programs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive })
+      });
+      if (res.ok) {
+        await fetchPrograms();
+        await fetchEpisodes();
+      }
+    } catch (e) {
+      console.error('Toggle program error:', e);
+    }
+  };
+
   const handleScrape = async (silent = false) => {
     if (!silent) setScraping(true);
     try {
@@ -169,6 +186,11 @@ export default function Dashboard() {
   };
 
   const highRiskCount = episodes.filter(e => e.riskLevel === '상').length;
+
+  // 장기 미업데이트(30일 이상 미갱신, 종영 의심) 프로그램 필터링
+  const staleCandidates = programs.filter(p => p.isActive && p.isStaleCandidate && !dismissedStaleIds.has(p.id));
+  const activePrograms = programs.filter(p => p.isActive);
+  const inactivePrograms = programs.filter(p => !p.isActive);
 
   return (
     <div className={styles.container}>
@@ -252,6 +274,94 @@ export default function Dashboard() {
           </div>
         </header>
 
+        {/* 장기 미업데이트 / 종영 의심 프로그램 감지 알림 배너 */}
+        {staleCandidates.length > 0 && currentView === 'dashboard' && (
+          <section className="animate-fade-in" style={{
+            background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(239, 68, 68, 0.08) 100%)',
+            border: '1px solid rgba(234, 179, 8, 0.35)',
+            borderRadius: '12px',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <AlertTriangle size={22} color="#eab308" />
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fef08a', margin: 0 }}>
+                  장기 미업데이트 / 종영 의심 프로그램 감지 ({staleCandidates.length}건)
+                </h3>
+              </div>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                30일 이상 신규 회차 미등록 시 자동 감지
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#fde047', lineHeight: 1.5 }}>
+              아래 프로그램은 <strong>최근 30일 이상 새로운 회차가 등록되지 않았거나 이전 데이터가 반복</strong>되고 있습니다. 종영되었거나 장기 휴방 중인 경우 모니터링 목록에서 제외하시겠습니까?
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              {staleCandidates.map(prog => (
+                <div key={prog.id} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: 'rgba(0,0,0,0.3)',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  flexWrap: 'wrap',
+                  gap: '0.8rem'
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 600, color: 'white', marginRight: '0.5rem' }}>
+                      [{prog.channel}] {prog.title}
+                    </span>
+                    <span style={{ fontSize: '0.82rem', color: '#fca5a5' }}>
+                      (마지막 방송/등록: {prog.staleDays}일 전 {prog.latestEpisodeDate ? `· ${new Date(prog.latestEpisodeDate).toLocaleDateString()}` : ''})
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => handleToggleProgram(prog.id, false)}
+                      style={{
+                        background: '#dc2626',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '6px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      <Ban size={14} /> 모니터링 제외하기
+                    </button>
+                    <button
+                      onClick={() => setDismissedStaleIds(prev => new Set(prev).add(prog.id))}
+                      style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'var(--text-muted)',
+                        border: 'none',
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '6px',
+                        fontSize: '0.82rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      유지하기
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {currentView === 'dashboard' && (
           <>
             {/* Stats Summary */}
@@ -275,7 +385,7 @@ export default function Dashboard() {
               <div className={styles.listHeader}>
                 <h3>최근 수집 리스트</h3>
                 <div className={styles.filters}>
-                  <span className={styles.filterChip}>전체보기</span>
+                  <span className={styles.filterChip}>활성 프로그램 {activePrograms.length}개 대상</span>
                 </div>
               </div>
 
@@ -308,7 +418,6 @@ export default function Dashboard() {
                       <div className={styles.cardBody}>
                         <h4 className={styles.epTitle}>{ep.title}</h4>
 
-
                         <div className={styles.aiSummaryBox}>
                           <div className={styles.aiHeader}>
                             <span>🔍 키워드 감지 ({ep.category})</span>
@@ -332,6 +441,11 @@ export default function Dashboard() {
                       </div>
                     </article>
                   ))}
+                  {episodes.length === 0 && (
+                    <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', gridColumn: '1 / -1' }}>
+                      표시할 수집 데이터가 없습니다. 상단의 [최신 데이터 갱신] 버튼을 눌러보세요.
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -376,27 +490,106 @@ export default function Dashboard() {
 
             <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: '1fr 1fr' }}>
               <div className="glass-panel" style={{ padding: '2rem' }}>
-                <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: 'var(--accent-brand)' }}>📺 모니터링 채널 리스트</h4>
-                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {programs.map(prog => (
-                    <li key={prog.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                      <span>{prog.channel} {prog.title}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                        <span style={{ color: 'var(--text-muted)' }}>
-                          {prog.lastScrapedAt ? new Date(prog.lastScrapedAt).toLocaleString() : '수집 기록 없음'}
-                        </span>
-                        {prog.lastScrapeStatus === 'ERROR' ? (
-                          <span title={prog.lastScrapeError || '오류'} style={{ color: 'var(--risk-high)', cursor: 'help', fontSize: '1.1rem' }}>🔴</span>
-                        ) : prog.lastScrapeStatus === 'SUCCESS' ? (
-                          <span title="정상" style={{ color: 'var(--risk-low)', fontSize: '1.1rem' }}>🟢</span>
-                        ) : (
-                          <span title="대기" style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>⚪</span>
-                        )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                  <h4 style={{ fontSize: '1.1rem', color: 'var(--accent-brand)', margin: 0 }}>📺 모니터링 채널 관리</h4>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>활성 {activePrograms.length}개 / 제외 {inactivePrograms.length}개</span>
+                </div>
+
+                <h5 style={{ color: 'var(--text-main)', fontSize: '0.9rem', marginBottom: '0.8rem' }}>🟢 활성 모니터링 프로그램</h5>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '2rem' }}>
+                  {activePrograms.map(prog => (
+                    <li key={prog.id} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      borderBottom: '1px solid rgba(255,255,255,0.08)',
+                      paddingBottom: '0.75rem',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem'
+                    }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 500 }}>{prog.channel} {prog.title}</span>
+                          {prog.isStaleCandidate && (
+                            <span style={{
+                              fontSize: '0.72rem',
+                              background: 'rgba(234, 179, 8, 0.2)',
+                              color: '#fde047',
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '12px',
+                              border: '1px solid rgba(234, 179, 8, 0.4)'
+                            }}>
+                              🟡 {prog.staleDays}일 미갱신(종영의심)
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                          최근 수집: {prog.lastScrapedAt ? new Date(prog.lastScrapedAt).toLocaleString() : '기록 없음'}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => handleToggleProgram(prog.id, false)}
+                          style={{
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            color: '#fca5a5',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '0.35rem 0.7rem',
+                            borderRadius: '6px',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          제외하기
+                        </button>
                       </div>
                     </li>
                   ))}
-                  {programs.length === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>등록된 프로그램이 없습니다.</span>}
+                  {activePrograms.length === 0 && (
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>활성화된 프로그램이 없습니다.</span>
+                  )}
                 </ul>
+
+                {inactivePrograms.length > 0 && (
+                  <>
+                    <h5 style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.8rem' }}>⚪ 제외(종영)된 프로그램</h5>
+                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                      {inactivePrograms.map(prog => (
+                        <li key={prog.id} style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          borderBottom: '1px solid rgba(255,255,255,0.05)',
+                          paddingBottom: '0.75rem',
+                          opacity: 0.75
+                        }}>
+                          <div>
+                            <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>{prog.channel} {prog.title}</span>
+                            <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', color: '#94a3b8' }}>(모니터링 제외됨)</span>
+                          </div>
+                          <button
+                            onClick={() => handleToggleProgram(prog.id, true)}
+                            style={{
+                              background: 'rgba(59, 130, 246, 0.15)',
+                              color: '#93c5fd',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                              padding: '0.35rem 0.7rem',
+                              borderRadius: '6px',
+                              fontSize: '0.78rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.2rem'
+                            }}
+                          >
+                            <RotateCcw size={12} /> 다시 포함
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
 
               <div className="glass-panel" style={{ padding: '2rem' }}>

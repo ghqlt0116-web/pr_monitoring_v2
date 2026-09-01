@@ -6,12 +6,11 @@ import path from 'path';
 import { analyzeWithKeywords } from '@/lib/analyze';
 import { sendTelegramAlert, sendTelegramSummary } from '@/lib/telegram';
 
-// 프로그램 기본 설정 맵핑
+// 프로그램 기본 설정 맵핑 ('더 보다' 종영에 따라 제외)
 const CONFIG: Record<string, { type: 'SBS_API' | 'KBS_API' | 'MBC_HTML', id?: string }> = {
   '그것이 알고싶다': { type: 'SBS_API', id: 'S01_V0000010101' },
   '궁금한 이야기 Y': { type: 'SBS_API', id: 'S01_V0000339666' },
   '시사기획 창': { type: 'KBS_API', id: 'T2011-1097-04-428648' },
-  '더 보다': { type: 'KBS_API', id: 'T2024-0017-02-480685' },
   'PD수첩': { type: 'MBC_HTML', id: '1000836100000100000' },
   '탐사기획 스트레이트': { type: 'MBC_HTML', id: '1003647100000100000' },
 };
@@ -28,7 +27,10 @@ export async function POST(req?: Request) {
     const body = req ? await req.json().catch(() => ({})) : {};
     const force = body.force === true;
 
-    const programs = await prisma.program.findMany();
+    // 활성화(isActive: true)된 프로그램만 크롤링 대상으로 조회
+    const programs = await (prisma.program.findMany as any)({
+      where: { isActive: true }
+    });
 
     // DB에서 키워드 로드
     const dbKeywords = await prisma.programKeyword.findMany({ where: { isActive: true } });
