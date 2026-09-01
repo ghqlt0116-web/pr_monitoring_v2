@@ -12,6 +12,7 @@ export default function CommunityFastDashboard() {
     const [previewLoading, setPreviewLoading] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any[]>([]);
     const [previewSite, setPreviewSite] = useState<string | null>(null);
+    const [previewSiteType, setPreviewSiteType] = useState<string | null>(null);
 
     const [newKeyword, setNewKeyword] = useState('');
     const [newSubKeyword, setNewSubKeyword] = useState('');
@@ -44,6 +45,7 @@ export default function CommunityFastDashboard() {
     const handlePreview = async (siteType: string, siteName: string) => {
         setPreviewLoading(siteType);
         setPreviewSite(siteName);
+        setPreviewSiteType(siteType);
         setPreviewData([]);
         try {
             const res = await fetch(`/api/community-fast/preview?siteType=${siteType}`);
@@ -165,7 +167,7 @@ export default function CommunityFastDashboard() {
                     <div>
                         <h2 className={styles.pageTitle}>실시간 커뮤니티 모니터링</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
-                            <p className={styles.subtitle} style={{ margin: 0 }}>외부 무료 크론 서비스 연동을 통한 실시간 키워드 감지</p>
+                            <p className={styles.subtitle} style={{ margin: 0 }}>실시간 타겟 키워드 감지 및 텔레그램 긴급 알림</p>
                             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                 <Clock size={14} /> 게시판을 DB에 저장하지 않고, 텔레그램 긴급 알림방으로 즉시 발송합니다.
                             </span>
@@ -177,12 +179,12 @@ export default function CommunityFastDashboard() {
                     {/* Target Sites Section */}
                     <section className="glass-panel" style={{ padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                            <h4 style={{ fontSize: '1.1rem', color: '#f59e0b' }}>🌐 실시간 모니터링 대상 (자동수집)</h4>
+                            <h4 style={{ fontSize: '1.1rem', color: '#f59e0b', margin: 0 }}>🌐 실시간 모니터링 대상 (자동수집)</h4>
                         </div>
 
                         <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {[...targets].map(t => (
-                                <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', minWidth: 0 }}>
+                                <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.75rem', minWidth: 0 }}>
                                     <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                             <strong style={{ color: '#f59e0b' }}>{t.siteName}</strong>
@@ -194,10 +196,15 @@ export default function CommunityFastDashboard() {
                                                 {previewLoading === t.siteType ? '불러오는 중...' : '👀 실시간 파싱 테스트'}
                                             </button>
                                         </div>
-                                        <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
+                                        <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', flexWrap: 'wrap' }}>
                                             <span style={{ color: 'var(--text-muted)' }}>
                                                 마지막 확인한 게시물 ID: {t.lastScrapedPostId || '없음'}
                                             </span>
+                                            {t.siteType === 'RULIWEB' && (
+                                                <span style={{ color: '#93c5fd', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                                                    💡 IP 차단 방지 GitHub 릴레이 수집 대상
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </li>
@@ -210,25 +217,20 @@ export default function CommunityFastDashboard() {
                                     <h5 style={{ color: '#f59e0b', margin: 0, fontSize: '1rem' }}>📡 {previewSite} 수집 데이터 미리보기 (최근 10건)</h5>
                                     <button onClick={() => setPreviewSite(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem' }}>닫기 ✕</button>
                                 </div>
+
+                                {previewSiteType === 'RULIWEB' && (
+                                    <div style={{ padding: '0.5rem 0.8rem', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.8rem', color: '#93c5fd' }}>
+                                        💡 루리웹은 웹 방화벽(IP 차단) 방지를 위해 <strong>GitHub Actions 릴레이로 수집된 최신 스냅샷(10건)</strong>을 표시합니다.
+                                    </div>
+                                )}
+
                                 {previewData.length === 0 && previewLoading ? (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1rem 0' }}>
                                         <div className={styles.spinner} style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
-                                        <span>해당 사이트의 HTML을 실시간으로 분석 중입니다...</span>
+                                        <span>해당 사이트의 HTML을 분석 중입니다...</span>
                                     </div>
                                 ) : previewData.length === 0 ? (
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>게시글을 가져오지 못했습니다.</p>
-                                ) : previewData[0]?.isRelay ? (
-                                    <div style={{ padding: '1.2rem', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px' }}>
-                                        <p style={{ color: '#93c5fd', margin: 0, fontSize: '0.9rem', lineHeight: '1.6' }}>
-                                            💡 <strong>GitHub Actions 릴레이 자동수집 대상</strong><br/>
-                                            {previewData[0].message}
-                                        </p>
-                                        <div style={{ marginTop: '0.8rem' }}>
-                                            <a href="https://github.com/ghqlt0116-web/pr_monitoring_v2/actions" target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', fontSize: '0.85rem', textDecoration: 'underline' }}>
-                                                👉 GitHub Actions에서 수동 실행 및 로그 확인하기
-                                            </a>
-                                        </div>
-                                    </div>
                                 ) : (
                                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                                         {previewData.map((p, i) => (
@@ -246,7 +248,7 @@ export default function CommunityFastDashboard() {
                     {/* Keywords Section */}
                     <section className="glass-panel" style={{ padding: '2rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                            <h4 style={{ fontSize: '1.1rem', color: '#f59e0b' }}>🔑 실시간 알림 타겟 키워드 설정</h4>
+                            <h4 style={{ fontSize: '1.1rem', color: '#f59e0b', margin: 0 }}>🔑 실시간 알림 타겟 키워드 설정</h4>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(245,158,11,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)' }}>
@@ -279,19 +281,6 @@ export default function CommunityFastDashboard() {
                         </div>
                     </section>
                 </div>
-                
-                <section className="glass-panel" style={{ padding: '2rem', marginTop: '2rem', border: '1px dashed rgba(245,158,11,0.5)' }}>
-                    <h4 style={{ fontSize: '1.1rem', color: '#f59e0b', marginBottom: '1rem' }}>⚙️ 크론 작업 (Cron Job) 설정 안내</h4>
-                    <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', fontSize: '0.95rem' }}>
-                        이 실시간 시스템은 서버리스 환경(Vercel)의 콜드 스타트 문제를 피해 5~10분 주기로 안정적으로 동작하기 위해 <strong>외부 무료 크론 서비스</strong>(예: cron-job.org) 연동이 필요합니다.<br/><br/>
-                        <strong>설정 방법:</strong><br/>
-                        1. cron-job.org 에 접속하여 회원가입 후 로그인합니다.<br/>
-                        2. "Create Cronjob" 메뉴에서 URL에 <code>https://현재도메인/api/scraper/keyword-alert</code> 을 입력합니다.<br/>
-                        3. 실행 주기(Schedule)를 <strong>5분</strong> 또는 <strong>10분</strong>으로 설정합니다.<br/>
-                        4. Method는 <code>POST</code> 로 설정하고 저장합니다.<br/>
-                        이렇게 설정해두면 주기적으로 시스템이 깨어나 키워드를 감지하고 텔레그램(긴급방)으로 발송합니다.
-                    </p>
-                </section>
             </main>
         </div>
     );
