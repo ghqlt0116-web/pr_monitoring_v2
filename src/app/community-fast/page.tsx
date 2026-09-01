@@ -201,8 +201,8 @@ export default function CommunityFastDashboard() {
                                                 마지막 확인한 게시물 ID: {t.lastScrapedPostId || '없음'}
                                             </span>
                                             {t.siteType === 'RULIWEB' && (
-                                                <span style={{ color: '#93c5fd', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', padding: '0.1rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                                                    💡 IP 차단 방지 GitHub 릴레이 수집 대상
+                                                <span style={{ color: '#93c5fd', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                                                    ⏱️ 릴레이 주기 수집 (현재 시각과 시간차 발생 가능)
                                                 </span>
                                             )}
                                         </div>
@@ -219,8 +219,10 @@ export default function CommunityFastDashboard() {
                                 </div>
 
                                 {previewSiteType === 'RULIWEB' && (
-                                    <div style={{ padding: '0.5rem 0.8rem', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.8rem', color: '#93c5fd' }}>
-                                        💡 루리웹은 웹 방화벽(IP 차단) 방지를 위해 <strong>GitHub Actions 릴레이로 수집된 최신 스냅샷(10건)</strong>을 표시합니다.
+                                    <div style={{ padding: '0.75rem 1rem', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd', lineHeight: '1.5' }}>
+                                        <div style={{ fontWeight: 600, marginBottom: '0.2rem', color: '#bfdbfe' }}>⏱️ 수집 방식 및 시간차 안내</div>
+                                        <div>• <strong>뽐뿌</strong>: 버튼 클릭 즉시 실시간(초 단위)으로 조회됩니다.</div>
+                                        <div>• <strong>루리웹</strong>: 보안(IP 차단) 방지를 위해 <strong>GitHub Actions 릴레이가 마지막으로 실행된 시점의 최신 글 스냅샷</strong>이 표시되므로, 현재 시각과 수집 시점 간에 약간의 시간차가 발생합니다.</div>
                                     </div>
                                 )}
 
