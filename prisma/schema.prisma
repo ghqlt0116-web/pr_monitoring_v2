@@ -153,6 +153,8 @@ model RealtimeCommunityTarget {
   siteName         String    // 예: "뽐뿌", "루리웹"
   siteType         String    @unique // "PPOMPPU", "RULIWEB" 등 식별자
   lastScrapedPostId String?  // 중복 알림 방지용 가장 최근 파싱한 게시글 ID
+  lastPostsJson    String?   @db.Text // 최신 파싱된 10건 게시글 JSON 캐시
+  lastScrapedAt    DateTime? // 마지막 수집 일시
   isActive         Boolean   @default(true)
   createdAt        DateTime  @default(now())
 }

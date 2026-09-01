@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import * as cheerio from 'cheerio';
 import iconv from 'iconv-lite';
 import { getLatestRuliwebPosts, setLatestRuliwebPosts } from '@/lib/ruliwebCache';
@@ -70,7 +71,7 @@ export async function GET(req: Request) {
                             if (noMatch && title) {
                                 const cleanTitle = title.split('\n')[0].trim();
                                 if (cleanTitle) {
-                                    posts.push({ id: noMatch[1], title: cleanTitle, url: 'https://m.ppomppu.co.kr/new/' + href.replace(/^\/new\//, '') });
+                                    posts.push({ id: noMatch[1], title, cleanTitle, url: 'https://m.ppomppu.co.kr/new/' + href.replace(/^\/new\//, '') });
                                 }
                             }
                         });
@@ -82,13 +83,13 @@ export async function GET(req: Request) {
             return NextResponse.json(posts);
 
         } else if (siteType === 'RULIWEB') {
-            // 1순위: 루리웹 직접 실시간 파싱 시도
+            // 1순위: 직접 실시간 파싱 시도
             try {
                 const ruliwebUrl = 'https://bbs.ruliweb.com/community/board/300143?view=default';
                 const res = await fetch(ruliwebUrl, {
                     headers: BROWSER_HEADERS,
                     cache: 'no-store',
-                    signal: AbortSignal.timeout(5000)
+                    signal: AbortSignal.timeout(4000)
                 });
 
                 if (res.ok) {
@@ -128,24 +129,45 @@ export async function GET(req: Request) {
 
                     if (posts.length > 0) {
                         setLatestRuliwebPosts(posts);
+                        // DB에도 최신 파싱 내역 동기화
+                        await (prisma as any).realtimeCommunityTarget.updateMany({
+                            where: { siteType: 'RULIWEB' },
+                            data: {
+                                lastPostsJson: JSON.stringify(posts.slice(0, 10)),
+                                lastScrapedAt: new Date()
+                            }
+                        }).catch(() => {});
+
                         return NextResponse.json(posts);
                     }
                 }
             } catch (e) {
-                console.error("Direct Ruliweb fetch failed or blocked:", e);
+                console.warn("Direct Ruliweb fetch blocked or failed:", e);
             }
 
-            // 2순위: 캐시된 릴레이 데이터가 있는 경우 반환
+            // 2순위: DB에 영구 저장된 최신 10건 캐시 조회 (GitHub 릴레이 또는 이전 수집 결과)
+            try {
+                const target = await (prisma as any).realtimeCommunityTarget.findUnique({
+                    where: { siteType: 'RULIWEB' }
+                });
+
+                if (target?.lastPostsJson) {
+                    const parsed = JSON.parse(target.lastPostsJson);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return NextResponse.json(parsed.slice(0, 10));
+                    }
+                }
+            } catch (dbErr) {
+                console.error("Failed to read lastPostsJson from DB:", dbErr);
+            }
+
+            // 3순위: 메모리 캐시 조회
             const { posts: cachedPosts } = getLatestRuliwebPosts();
             if (cachedPosts && cachedPosts.length > 0) {
                 return NextResponse.json(cachedPosts.slice(0, 10));
             }
 
-            // 3순위: 직접 파싱도 안 되고 릴레이 캐시도 없는 경우 안내 반환
-            return NextResponse.json({
-                isRelay: true,
-                message: '루리웹 서버가 외부 IP를 차단할 경우 GitHub Actions 릴레이를 통해 안전하게 백그라운드 수집됩니다. GitHub Actions에서 [Run workflow]를 1회 실행하시면 즉시 최신 게시글 10건이 동기화됩니다.'
-            });
+            return NextResponse.json(posts);
         }
 
         return NextResponse.json(posts);

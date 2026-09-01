@@ -131,13 +131,15 @@ export async function POST(req: Request) {
                     }
                 }
 
-                // 최근 스크랩 ID 갱신
-                if (newMaxId !== maxScrapedId) {
-                    await (prisma as any).realtimeCommunityTarget.update({
-                        where: { id: target.id },
-                        data: { lastScrapedPostId: newMaxId }
-                    });
-                }
+                // 최근 스크랩 ID 및 최신 10건 포스트 JSON 캐시 갱신
+                await (prisma as any).realtimeCommunityTarget.update({
+                    where: { id: target.id },
+                    data: {
+                        lastScrapedPostId: newMaxId !== maxScrapedId ? newMaxId : target.lastScrapedPostId,
+                        lastPostsJson: JSON.stringify(posts.slice(0, 10)),
+                        lastScrapedAt: new Date()
+                    }
+                });
             }
         }
 
