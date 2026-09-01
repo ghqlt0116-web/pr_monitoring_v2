@@ -202,7 +202,7 @@ export default function CommunityFastDashboard() {
                                             </span>
                                             {t.siteType === 'RULIWEB' && (
                                                 <span style={{ color: '#93c5fd', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.15)', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                                                    ⏱️ 릴레이 주기 수집 (현재 시각과 시간차 발생 가능)
+                                                    ⏱️ 주기별 수집 (시간차 발생 가능)
                                                 </span>
                                             )}
                                         </div>
@@ -213,17 +213,15 @@ export default function CommunityFastDashboard() {
 
                         {previewSite && (
                             <div className="animate-fade-in" style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'rgba(0,0,0,0.4)', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.3)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
                                     <h5 style={{ color: '#f59e0b', margin: 0, fontSize: '1rem' }}>📡 {previewSite} 수집 데이터 미리보기 (최근 10건)</h5>
                                     <button onClick={() => setPreviewSite(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.85rem' }}>닫기 ✕</button>
                                 </div>
 
                                 {previewSiteType === 'RULIWEB' && (
-                                    <div style={{ padding: '0.75rem 1rem', background: 'rgba(59, 130, 246, 0.12)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd', lineHeight: '1.5' }}>
-                                        <div style={{ fontWeight: 600, marginBottom: '0.2rem', color: '#bfdbfe' }}>⏱️ 수집 방식 및 시간차 안내</div>
-                                        <div>• <strong>뽐뿌</strong>: 버튼 클릭 즉시 실시간(초 단위)으로 조회됩니다.</div>
-                                        <div>• <strong>루리웹</strong>: 보안(IP 차단) 방지를 위해 <strong>GitHub Actions 릴레이가 마지막으로 실행된 시점의 최신 글 스냅샷</strong>이 표시되므로, 현재 시각과 수집 시점 간에 약간의 시간차가 발생합니다.</div>
-                                    </div>
+                                    <p style={{ margin: '0 0 0.8rem 0', fontSize: '0.8rem', color: '#93c5fd' }}>
+                                        ※ 루리웹은 주기별 자동 수집 방식으로 현재 시각과 약간의 시간차가 있을 수 있습니다.
+                                    </p>
                                 )}
 
                                 {previewData.length === 0 && previewLoading ? (
