@@ -511,3 +511,229 @@
     padding: 1rem;
   }
 }
+
+/* =========================================
+   Settings & Config Responsive Styles (설정 반응형 UI)
+   ========================================= */
+.settingsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.settingsCard {
+  padding: 1.75rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.settingsCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.settingsCardTitle {
+  font-size: 1.1rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settingsInput {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: white;
+  font-size: 0.88rem;
+  min-width: 0;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.settingsInput:focus {
+  border-color: rgba(225, 29, 72, 0.6);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.keywordBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.keywordInputRow {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.keywordFieldMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.keywordFieldSub {
+  flex: 1.5;
+  min-width: 0;
+}
+
+.keywordFieldExclude {
+  flex: 1.5;
+  min-width: 0;
+}
+
+.keywordFieldAction {
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.keywordLabel {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.keywordSubmitBtn {
+  height: 38px;
+  padding: 0.6rem 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.keywordSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Channel & Site Add Row */
+.channelAddRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.channelAddInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.channelAddSelect {
+  width: auto;
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.channelAddBtn {
+  background: var(--accent-brand);
+  color: white;
+  padding: 0 1.2rem;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.channelAddBtn:hover {
+  background: var(--accent-brand-hover);
+}
+
+.programItemText {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+}
+
+/* Responsive Breakpoints for Settings */
+@media (max-width: 960px) {
+  .settingsGrid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .settingsCard {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
+
+  .keywordBox {
+    padding: 1rem 0.85rem;
+  }
+
+  .keywordInputRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .keywordFieldMain,
+  .keywordFieldSub,
+  .keywordFieldExclude,
+  .keywordFieldAction {
+    width: 100%;
+    flex: none;
+  }
+
+  .keywordLabel {
+    white-space: normal;
+  }
+
+  .keywordSubmitBtn {
+    width: 100%;
+    height: 42px;
+    font-size: 0.95rem;
+  }
+
+  .channelAddRow {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .channelAddSelect {
+    width: 100%;
+  }
+
+  .channelAddBtn {
+    width: 100%;
+    height: 42px;
+    font-size: 0.95rem;
+  }
+}

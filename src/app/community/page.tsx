@@ -445,39 +445,41 @@ export default function CommunityDashboard() {
                         </div>
                     </>
                 ) : (
-                    <div className={styles.configGrid}>
+                    <div className={styles.settingsGrid}>
                         {/* Target Sites Section */}
-                        <section className="glass-panel" style={{ padding: '2rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                                <h4 style={{ fontSize: '1.1rem', color: '#10b981' }}>🌐 커뮤니티 파싱 타겟 등록</h4>
+                        <section className={`glass-panel ${styles.settingsCard}`}>
+                            <div className={styles.settingsCardHeader}>
+                                <h4 style={{ fontSize: '1.1rem', color: '#10b981', margin: 0 }}>🌐 커뮤니티 파싱 타겟 등록</h4>
                             </div>
 
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', minWidth: 0 }}>
-                                <input
-                                    type="text"
-                                    placeholder="사이트 명칭 (자동 추출 - 빈칸 가능)"
-                                    value={newSiteName}
-                                    onChange={(e) => setNewSiteName(e.target.value)}
-                                    className={styles.settingsInput}
-                                    style={{ flex: 1, minWidth: 0, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="타겟 URL 주소"
-                                    value={newTargetUrl}
-                                    onChange={(e) => setNewTargetUrl(e.target.value)}
-                                    className={styles.settingsInput}
-                                    style={{ flex: 2, minWidth: 0, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                                />
-                                <button onClick={addTarget} className={styles.editBtn} style={{ background: 'var(--accent-brand)', padding: '0 1.5rem', flexShrink: 0 }}><Plus size={18} /></button>
+                            <div className={styles.channelAddRow}>
+                                <div className={styles.channelAddInput}>
+                                    <input
+                                        type="text"
+                                        placeholder="사이트 명칭 (자동 추출 - 빈칸 가능)"
+                                        value={newSiteName}
+                                        onChange={(e) => setNewSiteName(e.target.value)}
+                                        className={styles.settingsInput}
+                                    />
+                                </div>
+                                <div style={{ flex: 1.5, minWidth: 0 }}>
+                                    <input
+                                        type="text"
+                                        placeholder="타겟 URL 주소"
+                                        value={newTargetUrl}
+                                        onChange={(e) => setNewTargetUrl(e.target.value)}
+                                        className={styles.settingsInput}
+                                    />
+                                </div>
+                                <button onClick={addTarget} className={styles.channelAddBtn}><Plus size={18} /><span>추가</span></button>
                             </div>
 
                             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {[...targets].sort((a, b) => a.siteName.localeCompare(b.siteName, 'ko-KR')).map(t => (
-                                    <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', minWidth: 0 }}>
-                                        <div style={{ flex: 1, minWidth: 0, paddingRight: '1rem' }}>
-                                            <strong style={{ color: '#10b981' }}>{t.siteName}</strong>
-                                            <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '350px' }}>
+                                    <li key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                        <div style={{ flex: 1, minWidth: '160px', paddingRight: '0.5rem' }}>
+                                            <strong style={{ color: '#10b981', wordBreak: 'break-all' }}>{t.siteName}</strong>
+                                            <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
                                                 {t.url}
                                             </span>
                                             <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
@@ -493,7 +495,7 @@ export default function CommunityDashboard() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
                                             <button onClick={() => removeTarget(t.id)} style={{ background: 'none', border: 'none', color: 'var(--risk-high)', cursor: 'pointer', padding: '0.5rem' }}>
                                                 <Trash2 size={16} />
                                             </button>
@@ -504,34 +506,34 @@ export default function CommunityDashboard() {
                         </section>
 
                         {/* Keywords Section */}
-                        <section className="glass-panel" style={{ padding: '2rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                                <h4 style={{ fontSize: '1.1rem', color: '#10b981' }}>🔑 자동 감지 타겟 키워드 설정</h4>
+                        <section className={`glass-panel ${styles.settingsCard}`}>
+                            <div className={styles.settingsCardHeader}>
+                                <h4 style={{ fontSize: '1.1rem', color: '#10b981', margin: 0 }}>🔑 자동 감지 타겟 키워드 설정</h4>
                             </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(16,185,129,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#10b981', marginBottom: '0.3rem' }}>자동 감지 단어 (필수)</label>
-                                        <input type="text" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} placeholder="예: 망사용료" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                            <div className={styles.keywordBox} style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                <div className={styles.keywordInputRow}>
+                                    <div className={styles.keywordFieldMain}>
+                                        <label className={styles.keywordLabel} style={{ color: '#10b981' }}>자동 감지 단어 (필수)</label>
+                                        <input type="text" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} placeholder="예: 망사용료" className={styles.settingsInput} />
                                     </div>
-                                    <div style={{ flex: 2 }}>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
-                                        <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} placeholder="예: 분쟁, 트래픽" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                    <div className={styles.keywordFieldSub}>
+                                        <label className={styles.keywordLabel} style={{ color: 'var(--text-muted)' }}>함께 연결될 단어 (선택, 쉼표 구분)</label>
+                                        <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} placeholder="예: 분쟁, 트래픽" className={styles.settingsInput} />
                                     </div>
-                                    <div style={{ flex: 2 }}>
-                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#ef4444', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
-                                        <input type="text" value={newExcludeKeyword} onChange={e => setNewExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 무관, 광고, 지원금" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                    <div className={styles.keywordFieldExclude}>
+                                        <label className={styles.keywordLabel} style={{ color: '#ef4444' }}>제외 단어 (선택, 쉼표 구분)</label>
+                                        <input type="text" value={newExcludeKeyword} onChange={e => setNewExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 무관, 광고, 지원금" className={styles.settingsInput} />
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                        <button onClick={addKeyword} className={styles.editBtn} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
+                                    <div className={styles.keywordFieldAction}>
+                                        <button onClick={addKeyword} className={`${styles.editBtn} ${styles.keywordSubmitBtn}`} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
                                     </div>
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                 {keywords.map(kw => (
-                                    <div key={kw.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem' }}>
+                                    <div key={kw.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem', wordBreak: 'break-all' }}>
                                         {kw.keyword.replace(/\+/g, ' ➕ ')}
                                         <button onClick={() => removeKeyword(kw.id)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', display: 'flex' }}><Trash2 size={14} /></button>
                                     </div>

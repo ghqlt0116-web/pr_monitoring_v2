@@ -500,39 +500,39 @@ export default function CreatorsDashboard() {
                 {currentView === 'settings' && (
                     <section className={`animate-fade-in ${styles.listSection}`}>
 
-                        <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-                            <div className="glass-panel" style={{ padding: '2rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                                    <h4 style={{ fontSize: '1.1rem', color: '#ef4444' }}>📺 모니터링 유튜버 채널 등록</h4>
+                        <div className={styles.settingsGrid}>
+                            <div className={`glass-panel ${styles.settingsCard}`}>
+                                <div className={styles.settingsCardHeader}>
+                                    <h4 style={{ fontSize: '1.1rem', color: '#ef4444', margin: 0 }}>📺 모니터링 유튜버 채널 등록</h4>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                                    <input
-                                        className={styles.settingsInput}
-                                        placeholder="채널 구글 ID (예: UC...)"
-                                        value={newChannelId}
-                                        onChange={e => setNewChannelId(e.target.value)}
-                                        style={{ flex: 1, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-                                    />
+                                <div className={styles.channelAddRow}>
+                                    <div className={styles.channelAddInput}>
+                                        <input
+                                            className={styles.settingsInput}
+                                            placeholder="채널 구글 ID (예: UC...)"
+                                            value={newChannelId}
+                                            onChange={e => setNewChannelId(e.target.value)}
+                                        />
+                                    </div>
                                     <select
                                         value={newChannelTier}
                                         onChange={(e) => setNewChannelTier(Number(e.target.value))}
-                                        className={styles.settingsInput}
-                                        style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none' }}
+                                        className={`${styles.settingsInput} ${styles.channelAddSelect}`}
                                     >
                                         <option value={1} style={{ color: 'black' }}>Tier 1 (최상)</option>
                                         <option value={2} style={{ color: 'black' }}>Tier 2 (중요)</option>
                                         <option value={3} style={{ color: 'black' }}>Tier 3 (일반)</option>
                                     </select>
-                                    <button onClick={addChannel} className={styles.editBtn} style={{ background: 'var(--accent-brand)' }}><Plus size={18} /></button>
+                                    <button onClick={addChannel} className={styles.channelAddBtn}><Plus size={18} /><span>추가</span></button>
                                 </div>
 
                                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     {channels.map(ch => (
-                                        <li key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                                            <div>
-                                                <strong>{ch.title}</strong>
-                                                <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)' }}>ID: {ch.youtubeId}</span>
+                                        <li key={ch.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                            <div style={{ flex: 1, minWidth: '160px' }}>
+                                                <strong style={{ wordBreak: 'break-all' }}>{ch.title}</strong>
+                                                <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>ID: {ch.youtubeId}</span>
                                                 <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
                                                     <span style={{ color: 'var(--text-muted)' }}>
                                                         {ch.lastScrapedAt ? new Date(ch.lastScrapedAt).toLocaleString() : '수집 기록 없음'}
@@ -546,12 +546,12 @@ export default function CreatorsDashboard() {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
                                                 <select
                                                     value={ch.tier || 3}
                                                     onChange={(e) => updateChannelTier(ch.id, Number(e.target.value))}
                                                     className={styles.settingsInput}
-                                                    style={{ padding: '0.4rem', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', outline: 'none', fontSize: '0.85rem' }}
+                                                    style={{ padding: '0.4rem', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', outline: 'none', fontSize: '0.85rem', width: 'auto' }}
                                                 >
                                                     <option value={1} style={{ color: 'black' }}>Tier 1</option>
                                                     <option value={2} style={{ color: 'black' }}>Tier 2</option>
@@ -564,34 +564,34 @@ export default function CreatorsDashboard() {
                                 </ul>
                             </div>
 
-                            <div className="glass-panel" style={{ padding: '2rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                                    <h4 style={{ fontSize: '1.1rem', color: '#10b981' }}>🔑 자동 감지 타겟 키워드 설정</h4>
+                            <div className={`glass-panel ${styles.settingsCard}`}>
+                                <div className={styles.settingsCardHeader}>
+                                    <h4 style={{ fontSize: '1.1rem', color: '#10b981', margin: 0 }}>🔑 자동 감지 타겟 키워드 설정</h4>
                                 </div>
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(16,185,129,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#10b981', marginBottom: '0.3rem' }}>자동 감지 단어 (필수)</label>
-                                            <input type="text" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} placeholder="예: 망사용료" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                <div className={styles.keywordBox} style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                    <div className={styles.keywordInputRow}>
+                                        <div className={styles.keywordFieldMain}>
+                                            <label className={styles.keywordLabel} style={{ color: '#10b981' }}>자동 감지 단어 (필수)</label>
+                                            <input type="text" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} placeholder="예: 망사용료" className={styles.settingsInput} />
                                         </div>
-                                        <div style={{ flex: 2 }}>
-                                            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
-                                            <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} placeholder="예: 분쟁, 트래픽" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                        <div className={styles.keywordFieldSub}>
+                                            <label className={styles.keywordLabel} style={{ color: 'var(--text-muted)' }}>함께 연결될 단어 (선택, 쉼표 구분)</label>
+                                            <input type="text" value={newSubKeyword} onChange={e => setNewSubKeyword(e.target.value)} placeholder="예: 분쟁, 트래픽" className={styles.settingsInput} />
                                         </div>
-                                        <div style={{ flex: 2 }}>
-                                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#ef4444', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
-                                            <input type="text" value={newExcludeKeyword} onChange={e => setNewExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 법안, 합의" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                                        <div className={styles.keywordFieldExclude}>
+                                            <label className={styles.keywordLabel} style={{ color: '#ef4444' }}>제외 단어 (선택, 쉼표 구분)</label>
+                                            <input type="text" value={newExcludeKeyword} onChange={e => setNewExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="예: 법안, 합의" className={styles.settingsInput} />
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                            <button onClick={addKeyword} className={styles.editBtn} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
+                                        <div className={styles.keywordFieldAction}>
+                                            <button onClick={addKeyword} className={`${styles.editBtn} ${styles.keywordSubmitBtn}`} disabled={!newKeyword.trim()} style={{ background: '#10b981', color: 'white' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                                     {keywords.map(kw => (
-                                        <div key={kw.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem' }}>
+                                        <div key={kw.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem', wordBreak: 'break-all' }}>
                                             {kw.keyword.replace(/\+/g, ' ➕ ')}
                                             <button onClick={() => removeKeyword(kw.id)} style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', display: 'flex' }}><Trash2 size={14} /></button>
                                         </div>

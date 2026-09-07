@@ -472,9 +472,9 @@ export default function Dashboard() {
               <h3>프로그램 및 키워드 설정</h3>
             </div>
 
-            <div style={{ display: 'grid', gap: '2rem', gridTemplateColumns: '1fr 1fr' }}>
-              <div className="glass-panel" style={{ padding: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div className={styles.settingsGrid}>
+              <div className={`glass-panel ${styles.settingsCard}`}>
+                <div className={styles.settingsCardHeader}>
                   <h4 style={{ fontSize: '1.1rem', color: 'var(--accent-brand)', margin: 0 }}>📺 모니터링 채널 관리</h4>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>활성 {activePrograms.length}개 / 제외 {inactivePrograms.length}개</span>
                 </div>
@@ -491,9 +491,9 @@ export default function Dashboard() {
                       flexWrap: 'wrap',
                       gap: '0.5rem'
                     }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontWeight: 500 }}>{prog.channel} {prog.title}</span>
+                      <div style={{ flex: 1, minWidth: '160px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <span className={styles.programItemText} style={{ fontWeight: 500 }}>{prog.channel} {prog.title}</span>
                           {prog.isStaleCandidate && (
                             <span style={{
                               fontSize: '0.72rem',
@@ -501,7 +501,8 @@ export default function Dashboard() {
                               color: '#fde047',
                               padding: '0.2rem 0.5rem',
                               borderRadius: '12px',
-                              border: '1px solid rgba(234, 179, 8, 0.4)'
+                              border: '1px solid rgba(234, 179, 8, 0.4)',
+                              whiteSpace: 'nowrap'
                             }}>
                               🟡 {prog.staleDays}일 미갱신(종영의심)
                             </span>
@@ -512,7 +513,7 @@ export default function Dashboard() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                         <button
                           onClick={() => handleToggleProgram(prog.id, false)}
                           style={{
@@ -522,7 +523,8 @@ export default function Dashboard() {
                             padding: '0.35rem 0.7rem',
                             borderRadius: '6px',
                             fontSize: '0.78rem',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
                           }}
                         >
                           제외하기
@@ -546,10 +548,12 @@ export default function Dashboard() {
                           alignItems: 'center',
                           borderBottom: '1px solid rgba(255,255,255,0.05)',
                           paddingBottom: '0.75rem',
-                          opacity: 0.75
+                          opacity: 0.75,
+                          flexWrap: 'wrap',
+                          gap: '0.5rem'
                         }}>
-                          <div>
-                            <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>{prog.channel} {prog.title}</span>
+                          <div style={{ flex: 1, minWidth: '160px' }}>
+                            <span className={styles.programItemText} style={{ textDecoration: 'line-through', color: 'var(--text-muted)' }}>{prog.channel} {prog.title}</span>
                             <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', color: '#94a3b8' }}>(모니터링 제외됨)</span>
                           </div>
                           <button
@@ -564,7 +568,9 @@ export default function Dashboard() {
                               cursor: 'pointer',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '0.2rem'
+                              gap: '0.2rem',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0
                             }}
                           >
                             <RotateCcw size={12} /> 다시 포함
@@ -576,34 +582,34 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className="glass-panel" style={{ padding: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', alignItems: 'center' }}>
-                  <h4 style={{ fontSize: '1.1rem', color: 'var(--accent-brand)' }}>🔑 리스크 감지 타겟 키워드</h4>
+              <div className={`glass-panel ${styles.settingsCard}`}>
+                <div className={styles.settingsCardHeader}>
+                  <h4 style={{ fontSize: '1.1rem', color: 'var(--accent-brand)', margin: 0 }}>🔑 리스크 감지 타겟 키워드</h4>
                 </div>
 
                 <h5 style={{ color: 'var(--risk-high)', marginBottom: '0.5rem' }}>위험도 [상] 단어 리스트</h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(239,68,68,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)' }}>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#fca5a5', marginBottom: '0.3rem' }}>핵심 단어 (필수)</label>
-                      <input type="text" value={newHighKeyword} onChange={e => setNewHighKeyword(e.target.value)} placeholder="예: 파업" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                <div className={styles.keywordBox} style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <div className={styles.keywordInputRow}>
+                    <div className={styles.keywordFieldMain}>
+                      <label className={styles.keywordLabel} style={{ color: '#fca5a5' }}>핵심 단어 (필수)</label>
+                      <input type="text" value={newHighKeyword} onChange={e => setNewHighKeyword(e.target.value)} placeholder="예: 파업" className={styles.settingsInput} />
                     </div>
-                    <div style={{ flex: 2 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
-                      <input type="text" value={newHighSubKeyword} onChange={e => setNewHighSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddHigh()} placeholder="예: SK, 브로드밴드, 통신사" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                    <div className={styles.keywordFieldSub}>
+                      <label className={styles.keywordLabel} style={{ color: 'var(--text-muted)' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
+                      <input type="text" value={newHighSubKeyword} onChange={e => setNewHighSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddHigh()} placeholder="예: SK, 브로드밴드, 통신사" className={styles.settingsInput} />
                     </div>
-                    <div style={{ flex: 2 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#fca5a5', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
-                      <input type="text" value={newHighExcludeKeyword} onChange={e => setNewHighExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddHigh()} placeholder="예: 시위, 임단협" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                    <div className={styles.keywordFieldExclude}>
+                      <label className={styles.keywordLabel} style={{ color: '#fca5a5' }}>제외 단어 (선택, 쉼표 구분)</label>
+                      <input type="text" value={newHighExcludeKeyword} onChange={e => setNewHighExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddHigh()} placeholder="예: 시위, 임단협" className={styles.settingsInput} />
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                      <button onClick={handleAddHigh} className={styles.editBtn} disabled={!newHighKeyword.trim()} style={{ background: 'var(--accent-brand)', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
+                    <div className={styles.keywordFieldAction}>
+                      <button onClick={handleAddHigh} className={`${styles.editBtn} ${styles.keywordSubmitBtn}`} disabled={!newHighKeyword.trim()} style={{ background: 'var(--accent-brand)', color: 'white' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
                     </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '2.5rem' }}>
                   {highKeywords.map(kw => (
-                    <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500, border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                    <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500, border: '1px solid rgba(239, 68, 68, 0.3)', wordBreak: 'break-all' }}>
                       {kw.replace(/\+/g, ' ➕ ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
                       <button onClick={() => handleRemoveHigh(kw)} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}><X size={14} /></button>
                     </div>
@@ -612,28 +618,28 @@ export default function Dashboard() {
                 </div>
 
                 <h5 style={{ color: 'var(--risk-mid)', marginBottom: '0.5rem' }}>위험도 [중] 단어 리스트</h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem', background: 'rgba(250,204,21,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(250,204,21,0.2)' }}>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#fde047', marginBottom: '0.3rem' }}>핵심 단어 (필수)</label>
-                      <input type="text" value={newMidKeyword} onChange={e => setNewMidKeyword(e.target.value)} placeholder="예: 해킹" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                <div className={styles.keywordBox} style={{ background: 'rgba(250,204,21,0.05)', border: '1px solid rgba(250,204,21,0.2)' }}>
+                  <div className={styles.keywordInputRow}>
+                    <div className={styles.keywordFieldMain}>
+                      <label className={styles.keywordLabel} style={{ color: '#fde047' }}>핵심 단어 (필수)</label>
+                      <input type="text" value={newMidKeyword} onChange={e => setNewMidKeyword(e.target.value)} placeholder="예: 해킹" className={styles.settingsInput} />
                     </div>
-                    <div style={{ flex: 2 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
-                      <input type="text" value={newMidSubKeyword} onChange={e => setNewMidSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddMid()} placeholder="예: 고객정보, 유출" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                    <div className={styles.keywordFieldSub}>
+                      <label className={styles.keywordLabel} style={{ color: 'var(--text-muted)' }}>함께 연결될 단어 (선택, 쉼표로 여러 개 입력)</label>
+                      <input type="text" value={newMidSubKeyword} onChange={e => setNewMidSubKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddMid()} placeholder="예: 고객정보, 유출" className={styles.settingsInput} />
                     </div>
-                    <div style={{ flex: 2 }}>
-                      <label style={{ display: 'block', fontSize: '0.8rem', color: '#fde047', marginBottom: '0.3rem' }}>제외 단어 (선택, 쉼표 구분)</label>
-                      <input type="text" value={newMidExcludeKeyword} onChange={e => setNewMidExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddMid()} placeholder="예: 무관, 광고" className={styles.settingsInput} style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }} />
+                    <div className={styles.keywordFieldExclude}>
+                      <label className={styles.keywordLabel} style={{ color: '#fde047' }}>제외 단어 (선택, 쉼표 구분)</label>
+                      <input type="text" value={newMidExcludeKeyword} onChange={e => setNewMidExcludeKeyword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddMid()} placeholder="예: 무관, 광고" className={styles.settingsInput} />
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                      <button onClick={handleAddMid} className={styles.editBtn} disabled={!newMidKeyword.trim()} style={{ background: 'var(--risk-mid)', color: 'white', padding: '0.6rem 1.2rem', height: '38px', display: 'flex', alignItems: 'center' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
+                    <div className={styles.keywordFieldAction}>
+                      <button onClick={handleAddMid} className={`${styles.editBtn} ${styles.keywordSubmitBtn}`} disabled={!newMidKeyword.trim()} style={{ background: 'var(--risk-mid)', color: 'white' }}><Plus size={18} style={{ marginRight: '4px' }} />등록</button>
                     </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {midKeywords.map(kw => (
-                    <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(250, 204, 21, 0.15)', color: '#fde047', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500, border: '1px solid rgba(250, 204, 21, 0.3)' }}>
+                    <div key={kw} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(250, 204, 21, 0.15)', color: '#fde047', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500, border: '1px solid rgba(250, 204, 21, 0.3)', wordBreak: 'break-all' }}>
                       {kw.replace(/\+/g, ' ➕ ').replace(/-/g, ' (제외: ').replace(/(\(제외: .*)$/, '$1)')}
                       <button onClick={() => handleRemoveMid(kw)} style={{ background: 'none', border: 'none', color: '#fde047', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}><X size={14} /></button>
                     </div>
